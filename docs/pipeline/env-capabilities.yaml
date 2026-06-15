@@ -1,0 +1,101 @@
+# 环境与 lark-cli 命令面探测结果
+# 探测于 2026-06-16；所有 available/命令名均有对应 `--help` 实际输出为证（非凭记忆）。
+# 用途：feishu-collector skill 的手脚层以此为命令名唯一真相源。
+
+node:
+  version: "v24.13.0"
+  available: true   # 证据: `node --version` -> v24.13.0
+
+lark_cli:
+  version: "1.0.53"   # 证据: `lark-cli --version`
+  subcommand_prefix: "+"   # 重要：业务子命令带 + 前缀，如 `base +record-upsert`
+  commands:
+    base:
+      verified_help: true
+      key:
+        record_upsert: "base +record-upsert --base-token <t> --table-id <tbl> [--record-id <rec>] --json '<fieldMap>' --as user"
+        record_search: "base +record-search --base-token <t> --table-id <tbl> [--keyword <k> --search-field <f> | --filter-json <json>]"
+        record_get:    "base +record-get --base-token <t> --table-id <tbl> --record-id <rec>"
+        field_list:    "base +field-list --base-token <t> --table-id <tbl>"
+        base_create:   "base +base-create"
+        field_create:  "base +field-create"
+      notes:
+        - "record-upsert 不按业务键自动 upsert：无 --record-id=建、有=更新。幂等由我们自己的 content_hash + 记录 record-id 实现。"
+        - "CellValue: text->\"text\"; number->12.5; select->\"Todo\"; multi->[\"A\",\"B\"]; datetime->\"2026-03-24 10:00:00\"; checkbox->true; user->[{\"id\":\"ou_xxx\"}]"
+    sheets:
+      verified_help: true
+      key:
+        cells_set: "sheets +cells-set --range '<SheetId>!C5' --cells '[[{\"value\":\"L\"}]]' --as user"
+        cells_get: "sheets +cells-get --range '<SheetId>!A1:Z' --as user"
+        csv_get:   "sheets +csv-get"
+      notes:
+        - "--cells 是 JSON 2D 数组 [[{value/formula/...}]]，维度需与 --range 匹配。"
+        - "TODO(集成时确认): cells-set 的 spreadsheet token 旗标名（--spreadsheet-token? 还是含在 range 前缀）——help 输出被截断，集成前跑一次 `sheets +cells-set --help` 全量确认。"
+    contact:
+      verified_help: true
+      key:
+        search_user: "contact +search-user --query '<名字>' --as user --json"
+        get_user:    "contact +get-user [--user-id ou_xxx | 省略=自己]"
+      notes:
+        - "search-user 必须 --as user；返回 users[]，每项含 open_id/name。"
+        - "可加 --user-ids 按 open_id 精确查；--queries 多关键词并行。"
+    im:
+      verified_help: true
+      key:
+        messages_send: "im +messages-send (--user-id ou_xxx | --chat-id oc_xxx) --text '<文本>' --as bot [--idempotency-key <k>]"
+        messages_reply: "im +messages-reply"
+        chat_messages_list: "im +chat-messages-list (--chat-id oc_xxx | --user-id ou_xxx)"
+        chat_search: "im +chat-search --query '<群名>'"
+        urgent_app:   "im messages urgent_app --message-id <om_xxx> ...   (bot only; bot 必须是发送者且在会话内)"
+        urgent_phone: "im messages urgent_phone ...   (bot only)"
+        urgent_sms:   "im messages urgent_sms ...   (bot only)"
+      notes:
+        - "发送用 --user-id(ou_)/--chat-id(oc_)，不是 --receive-id。支持 --idempotency-key 防重复发送。"
+        - "加急(urgent_*)是 bot-only，且 bot 必须是该消息发送者+在会话内 → 催办加急前 bot 需入群。"
+    docs:
+      verified_help: true
+      key:
+        update: "docs +update ...   (写文档；AI agent 必须先 `lark-cli skills read lark-doc` 再用)"
+        create: "docs +create"
+        fetch:  "docs +fetch"
+      notes:
+        - "命令是 docs 不是 doc。docs 写操作要求先读 lark-doc skill 拿 selector/block-id/XML 用法，勿仅凭 --help。"
+    drive:
+      verified_help: true
+      key:
+        import:      "drive +import --file <local.xlsx|.docx|.md|.pptx> --type <docx|sheet|bitable|slides>"
+        task_result: "drive +task_result   (轮询 import 异步结果)"
+        inspect:     "drive +inspect <飞书URL>   (拿 type/title/canonical token，含 wiki 解包)"
+      notes:
+        - "本地文件转在线: +import 后用 +task_result 轮询拿新 token。失败必须报错，禁止静默 fallback。"
+
+scopes:
+  identity_status:
+    bot:  "ready"                        # 证据: `lark-cli auth status`
+    user: "needs_refresh (自动刷新; refreshExpiresAt 2026-06-22)"
+  granted_user:    # 证据: auth status 的 user.scope 字段
+    - base:app:update
+    - contact:user.base:readonly
+    - contact:user.basic_profile:readonly
+    - docx:document:create
+    - docx:document:readonly
+    - docx:document:write_only
+    - docs:document:import
+    - drive:file:upload
+    - drive:file:download
+    - im:message:readonly
+    - im:message.group_msg:get_as_user      # 可读群消息(本功能其实不强依赖)
+    - im:message.p2p_msg:get_as_user
+    - offline_access
+    - wiki:node:create
+    - wiki:space:read
+  missing_or_unverified:    # 上线前必须补/确认
+    - "im:message:send_as_bot / im 发送类 scope —— 当前只见 readonly，发 DM/群消息需补 bot 发送权限"
+    - "sheets/spreadsheet 写 scope —— user.scope 里未见显式 sheets 写权限，写在线表格前确认"
+    - "bot 入群 —— 加急(urgent_*)与 bot 发群消息要求 bot 是群成员"
+  sensitive_not_needed:
+    - "im:message.group_msg (实时全量) —— 本功能只处理 @机器人 与定向回复，天然不需要"
+
+app_profiles:    # 证据: ~/.lark-cli/config.json
+  default: "cli_aaaf02ecdc38dbd9 (Leo, feishu)"
+  qianhai: "cli_aaa5aa6d56b8dbe0 (黄文轩, feishu)"

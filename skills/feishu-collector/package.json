@@ -1,0 +1,13 @@
+{
+  "name": "feishu-collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "飞书收集数字员工：上传文档/表格 + @机器人 → 群里/私信对话收集、清洗确认、幂等写回、自动催办与收工汇报。可移植 skill（Claude Code/OpenClaw/Hermes 通用）。",
+  "scripts": {
+    "test": "node --test test/",
+    "test:unit": "node --test test/hash.test.js test/state.test.js test/clean.test.js test/schedule.test.js test/locator.test.js",
+    "test:int": "node --test test/base-io.test.js",
+    "test:e2e": "node --test test/e2e.test.js"
+  }
+}
