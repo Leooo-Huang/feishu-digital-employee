@@ -21,9 +21,10 @@ function nowDate() { return new Date(process.env.COLLECTOR_NOW || Date.now()); }
 
 async function listCollectingTasks() {
   if (!ctx.appToken) { console.log('未配置 COLLECTOR_APP_TOKEN（dry 扫描跳过）'); return []; }
-  const filter = { logic: 'and', conditions: [{ field: '状态', operator: 'is', value: ['收集中'] }] };
+  // 实测：+record-search 默认输出 markdown，需 --format json；filter.conditions 为数组三元组
+  const body = JSON.stringify({ filter: { logic: 'and', conditions: [['状态', '==', '收集中']] }, limit: 200 });
   const res = await larkJson(['base', '+record-search', '--base-token', ctx.appToken,
-    '--table-id', ctx.tasksTableId, '--filter-json', JSON.stringify(filter), '--as', 'user'], { profile });
+    '--table-id', ctx.tasksTableId, '--json', body, '--format', 'json', '--as', 'user'], { profile });
   return (res.records || res.items || []).map((r) => ({ task_id: r.record_id || r.id, ...(r.fields || r) }));
 }
 

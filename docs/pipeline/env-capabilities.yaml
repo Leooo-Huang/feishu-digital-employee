@@ -97,5 +97,5 @@ scopes:
     - "im:message.group_msg (实时全量) —— 本功能只处理 @机器人 与定向回复，天然不需要"
 
 app_profiles:    # 证据: ~/.lark-cli/config.json
-  default: "cli_aaaf02ecdc38dbd9 (Leo, feishu)"
-  qianhai: "cli_aaa5aa6d56b8dbe0 (黄文轩, feishu)"
+  default: "cli_aaaf***（Leo，feishu）  # app id 已脱敏，真实值见本机 ~/.lark-cli/config.json"
+  qianhai: "cli_aaa5***（黄文轩，feishu）  # 同上"

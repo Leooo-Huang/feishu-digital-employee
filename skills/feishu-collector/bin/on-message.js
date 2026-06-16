@@ -39,11 +39,10 @@ function extract(ev) {
 async function activeSlotsForSender(openId) {
   if (!ctx.appToken || !openId) return [];
   // 跨所有收集中任务找该 sender 的未终结槽位（消息归属判定）
-  const filter = { logic: 'and', conditions: [
-    { field: '责任人open_id', operator: 'is', value: [openId] },
-  ] };
+  // 实测：+record-search 默认输出 markdown，需 --format json；filter.conditions 为数组三元组
+  const body = JSON.stringify({ filter: { logic: 'and', conditions: [['责任人open_id', '==', openId]] }, limit: 200 });
   const res = await larkJson(['base', '+record-search', '--base-token', ctx.appToken,
-    '--table-id', ctx.slotsTableId, '--filter-json', JSON.stringify(filter), '--as', 'user'], { profile })
+    '--table-id', ctx.slotsTableId, '--json', body, '--format', 'json', '--as', 'user'], { profile })
     .catch(() => ({ records: [] }));
   return (res.records || res.items || []).map((r) => ({ slot_id: r.record_id || r.id, ...(r.fields || r) }))
     .filter((s) => !['已填', '跳过', '不适用'].includes(s.状态));

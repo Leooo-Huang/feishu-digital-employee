@@ -1,0 +1,11 @@
+{
+  "name": "feishu-kb-maintainer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "飞书知识库自动维护数字员工（被动沉淀）：会议/群聊/文档评论 → 抽取决策/待办/结论/FAQ/进展 → 智能路由 + content_hash 幂等 → 写回 Wiki 文档/原生 Task/原生 OKR/评论串，周期汇总成周报。可移植 skill（Claude Code/OpenClaw/Hermes 通用）。",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:unit": "node --test test/hash.test.js test/route-io.test.js test/extract.test.js"
+  }
+}

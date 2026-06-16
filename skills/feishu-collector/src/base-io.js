@@ -38,27 +38,25 @@ export async function createSlots(ctx, taskId, slots) {
   return ids;
 }
 
+// 实测校准 (lark-cli 1.0.53)：+record-search 默认输出 markdown，必须带 --format json；
+// 筛选用 --json 传完整请求体（filter.conditions 为数组三元组 ["字段","操作符",值]，避免 --keyword 必填限制）。
+function searchBody(conditions, limit = 200) {
+  return JSON.stringify({ filter: { logic: 'and', conditions }, limit });
+}
+
 /** 按状态查某任务的槽位 */
 export async function querySlotsByStatus(ctx, taskId, status) {
-  const filter = { logic: 'and', conditions: [
-    { field: 'task_id', operator: 'is', value: [taskId] },
-    { field: '状态', operator: 'is', value: [status] },
-  ] };
   const res = await larkJson(['base', '+record-search', '--base-token', ctx.appToken,
-    '--table-id', ctx.slotsTableId, '--filter-json', JSON.stringify(filter), '--as', 'user'],
-    { profile: ctx.profile });
+    '--table-id', ctx.slotsTableId, '--json', searchBody([['task_id', '==', taskId], ['状态', '==', status]]),
+    '--format', 'json', '--as', 'user'], { profile: ctx.profile });
   return pickRecords(res).map(normalizeSlot);
 }
 
 /** 按责任人查某任务的未终结槽位（路由回复用） */
 export async function querySlotsByAssignee(ctx, taskId, openId) {
-  const filter = { logic: 'and', conditions: [
-    { field: 'task_id', operator: 'is', value: [taskId] },
-    { field: '责任人open_id', operator: 'is', value: [openId] },
-  ] };
   const res = await larkJson(['base', '+record-search', '--base-token', ctx.appToken,
-    '--table-id', ctx.slotsTableId, '--filter-json', JSON.stringify(filter), '--as', 'user'],
-    { profile: ctx.profile });
+    '--table-id', ctx.slotsTableId, '--json', searchBody([['task_id', '==', taskId], ['责任人open_id', '==', openId]]),
+    '--format', 'json', '--as', 'user'], { profile: ctx.profile });
   return pickRecords(res).map(normalizeSlot);
 }
 
