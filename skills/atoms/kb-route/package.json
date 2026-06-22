@@ -1,0 +1,10 @@
+{
+  "name": "kb-route",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·路由幂等：decideRoute/recordRoute/querySource/queryByKind，按 source_id 去重定位落点；含覆盖保护（防静默覆盖人工修改，Phase B）。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

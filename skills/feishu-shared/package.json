@@ -1,0 +1,10 @@
+{
+  "name": "feishu-shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "飞书数字员工共享底座：lark-cli 封装、内容指纹幂等、多维表格通用 CRUD，以及飞书读写能力原子模块。被各原子 skill 与编排器复用。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

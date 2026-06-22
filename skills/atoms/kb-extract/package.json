@@ -1,0 +1,10 @@
+{
+  "name": "kb-extract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·知识抽取归类：normalizeItems/groupByKind/sectionFingerprint，把要点归一为决策/结论/待办/FAQ 并去重生成指纹。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

@@ -7,7 +7,7 @@
 // 有副作用(在飞书云端建 Base) → 由用户在场、user 身份已授权
 //   base:table:create base:field:create base:field:read base:field:update base:view:write_only 时运行。
 // 已有库时设环境变量 COLLECTOR_APP_TOKEN 复用，仅补建缺失的表（幂等）。
-import { larkJson } from '../src/larkcli.js';
+import { larkJson } from '../../feishu-shared/src/larkcli.js';
 
 const profile = process.env.LARK_PROFILE; // 例如 'qianhai'；省略=默认 Leo
 const sel = (...names) => ({ type: 'select', options: names.map((name) => ({ name })) });
@@ -42,6 +42,7 @@ const SLOT_FIELDS = [
   { name: '状态', ...sel('待问', '已问', '收到原始', '清洗中', '待确认', '已填', '跳过', '不适用', '待澄清') },
   { name: '内容指纹', type: 'text' },
   { name: '追问次数', type: 'number' },
+  { name: '加急次数', type: 'number' }, // buzz 上限用：每槽加急次数，超过 maxUrgent 不再加急
   { name: '最近询问时间', type: 'datetime' },
   { name: '来源', type: 'text' },
 ];

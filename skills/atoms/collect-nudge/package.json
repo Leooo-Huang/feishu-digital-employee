@@ -1,0 +1,10 @@
+{
+  "name": "collect-nudge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·催办挑选：selectSlotsToNudge 纯函数，挑出超间隔未填槽位并对临近截止打 urgent 标记（发送由编排器经 feishu-shared/message 群内 @ 责任人执行）。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

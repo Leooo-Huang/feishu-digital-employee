@@ -5,8 +5,8 @@
 //
 // 设计取舍：真正的语言理解/决策由宿主 agent（CC 下=Claude；OpenClaw 下=其 agent）
 // 读 SKILL.md 完成；本脚本只做"快速归属判定 + 拉相关任务/槽位快照"，保持无状态、可移植。
-import { querySlotsByAssignee } from '../src/base-io.js';
-import { larkJson } from '../src/larkcli.js';
+import { querySlotsByAssigneeAll } from '../../atoms/collect-store/src/base-io.js';
+import { isBotMentioned } from '../../feishu-shared/src/im-util.js';
 
 const profile = process.env.LARK_PROFILE;
 const ctx = {
@@ -30,7 +30,8 @@ function extract(ev) {
   return {
     chatId: m.chat_id, chatType: m.chat_type,
     senderOpenId: sender.sender_id?.open_id || sender.open_id,
-    mentionsBot: JSON.stringify(m.mentions || '').includes('bot') || /@/.test(m.content || ''),
+    // 精确判定 @机器人：匹配 bot 自身 open_id（配 COLLECTOR_BOT_OPEN_ID）；不再用裸文本 /@/ 误判。
+    mentionsBot: isBotMentioned(m.mentions, process.env.COLLECTOR_BOT_OPEN_ID),
     text: (() => { try { return JSON.parse(m.content || '{}').text || ''; } catch { return m.content || ''; } })(),
     messageId: m.message_id,
   };
@@ -38,14 +39,9 @@ function extract(ev) {
 
 async function activeSlotsForSender(openId) {
   if (!ctx.appToken || !openId) return [];
-  // 跨所有收集中任务找该 sender 的未终结槽位（消息归属判定）
-  // 实测：+record-search 默认输出 markdown，需 --format json；filter.conditions 为数组三元组
-  const body = JSON.stringify({ filter: { logic: 'and', conditions: [['责任人open_id', '==', openId]] }, limit: 200 });
-  const res = await larkJson(['base', '+record-search', '--base-token', ctx.appToken,
-    '--table-id', ctx.slotsTableId, '--json', body, '--format', 'json', '--as', 'user'], { profile })
-    .catch(() => ({ records: [] }));
-  return (res.records || res.items || []).map((r) => ({ slot_id: r.record_id || r.id, ...(r.fields || r) }))
-    .filter((s) => !['已填', '跳过', '不适用'].includes(s.状态));
+  // 跨所有任务找该 sender 的未终结槽位（消息归属判定）。已分页取尽；查询失败让其上抛（不静默当作"无槽位"）。
+  const slots = await querySlotsByAssigneeAll(ctx, openId);
+  return slots.filter((s) => !['已填', '跳过', '不适用'].includes(s.状态));
 }
 
 async function main() {

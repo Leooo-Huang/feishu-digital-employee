@@ -1,0 +1,10 @@
+{
+  "name": "feishu-init",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "飞书数字员工·书童引导（第三编排器）。首次接触欢迎+能力菜单、配置体检、冷启动（搭知识库骨架 + 访谈式主动收集 / 引导上传导入）。解决「不知道能干什么、空系统从哪开始」。可移植 skill，Claude Code / OpenClaw / Hermes 通用。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}
