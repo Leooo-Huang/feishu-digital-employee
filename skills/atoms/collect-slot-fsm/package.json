@@ -1,0 +1,10 @@
+{
+  "name": "collect-slot-fsm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·收集槽位状态机：nextSlotState 白名单合法迁移（待问→已问→收到原始→清洗中⇄追问→待确认⇄改正→已填，旁支待澄清/不适用/跳过）。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

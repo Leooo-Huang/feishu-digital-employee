@@ -1,0 +1,10 @@
+{
+  "name": "collect-store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·收集线状态持久化：在飞书多维表格上读写任务表/槽位表（建任务/建槽/按状态查/按责任人查/更新/幂等写值）。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

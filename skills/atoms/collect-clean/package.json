@@ -1,0 +1,10 @@
+{
+  "name": "collect-clean",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·清洗归一化：身份证/尺码/邮箱/日期的全角半角归一与校验，不合格返回追问。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

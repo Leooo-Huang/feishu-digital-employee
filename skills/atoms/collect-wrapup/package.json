@@ -1,0 +1,10 @@
+{
+  "name": "collect-wrapup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·收工汇报：判断收集任务是否到期/全收齐，生成未交名单与完成汇报文案（纯函数，缺失不编造）。I/O（群发汇报、置已完成）由编排器执行。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}
