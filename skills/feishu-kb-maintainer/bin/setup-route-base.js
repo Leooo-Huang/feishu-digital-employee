@@ -6,7 +6,7 @@
 //   字段 type 用字符串名：text|select|number|datetime；首个 field 为主字段；select 带 options:[{name}]。
 //   已有库时设环境变量 KB_APP_TOKEN 复用，仅补建缺失的表（幂等）。
 // 有副作用(在飞书云端建 Base) → 由用户在场、user 身份已授权 base 建表/字段权限时运行。
-import { larkJson } from '../src/larkcli.js';
+import { larkJson } from '../../feishu-shared/src/larkcli.js';
 
 const profile = process.env.LARK_PROFILE; // 例如 'qianhai'；省略=默认 Leo
 const sel = (...names) => ({ type: 'select', options: names.map((name) => ({ name })) });
@@ -20,7 +20,8 @@ const ROUTE_FIELDS = [
   { name: 'target_id', type: 'text' },
   { name: 'target_locator', type: 'text' },
   { name: 'content_hash', type: 'text' },
-  { name: 'status', ...sel('written', 'updated', 'skipped') },
+  { name: 'target_content_hash', type: 'text' }, // 覆盖保护(#11)：上次写入目标的内容指纹，用于检测人工改动
+  { name: 'status', ...sel('written', 'updated', 'skipped', 'conflict') },
   { name: 'last_synced_at', type: 'datetime' },
 ];
 

@@ -10,7 +10,8 @@
 // 本脚本只做"事件归一 + 快照拉取"，保持无状态、可移植。
 // ⚠️ 文档评论无独立 EventKey（实测 `event list` 仅 board/im/minutes/vc 段，无 comment/docx 事件）——
 //    评论线以「@机器人 文档内提及」为触发兜底，经 im.message.receive_v1 进入，见 SKILL.md 工作流 E。
-import { querySource, queryByKind } from '../src/route-io.js';
+import { querySource, queryByKind } from '../../atoms/kb-route/src/route-io.js';
+import { isBotMentioned } from '../../feishu-shared/src/im-util.js';
 
 const profile = process.env.LARK_PROFILE;
 const ctx = {
@@ -42,7 +43,8 @@ function extractMessage(ev) {
   return {
     chatId: m.chat_id, chatType: m.chat_type,
     senderOpenId: sender.sender_id?.open_id || sender.open_id,
-    mentionsBot: JSON.stringify(m.mentions || '').includes('bot') || /@/.test(m.content || ''),
+    // 精确判定 @机器人：匹配 bot 自身 open_id（配 KB_BOT_OPEN_ID）；不再用裸文本 /@/ 误判。
+    mentionsBot: isBotMentioned(m.mentions, process.env.KB_BOT_OPEN_ID),
     text: (() => { try { return JSON.parse(m.content || '{}').text || ''; } catch { return m.content || ''; } })(),
     messageId: m.message_id,
   };
@@ -61,8 +63,9 @@ function extractMinute(ev) {
 async function handleMinute(ev) {
   const minute = extractMinute(ev);
   // 幂等前置：按 source_id=minute_token 查路由幂等表，已记录则提示宿主可能 skip。
+  // 注意：查询失败不静默吞（否则会被当作"无既有路由"→走 write→重复写库）；让其上抛由 main 记录。
   const existing = minute.minuteToken && ctx.appToken
-    ? await querySource(ctx, minute.minuteToken).catch(() => null) : null;
+    ? await querySource(ctx, minute.minuteToken) : null;
   return {
     eventKey: 'minutes.minute.generated_v1',
     line: 'meeting',
@@ -70,7 +73,7 @@ async function handleMinute(ev) {
     routeExisting: existing,
     hint: '会议沉淀：用 minutes.fetchNotes({minuteToken}) 取 summary/todos/transcript（无 summary 时你二次总结）→ '
       + 'extract.normalizeItems 归一去重 → 按 route-io.decideRoute 判定 write/update/skip → '
-      + 'kb-write 追加纪要段（决策汇入 Decision Log）、task-io.createTask 写行动项、okr-io.createProgress 写 KR 进展 → '
+      + 'doc 追加纪要段（决策汇入 Decision Log）、task.createTask 写行动项、okr.createProgress 写 KR 进展 → '
       + 'route-io.recordRoute 回写。source_id=minute_token，target_kind 按落点 doc/task/okr。',
   };
 }
@@ -78,15 +81,20 @@ async function handleMinute(ev) {
 async function handleMessage(ev) {
   const m = extractMessage(ev);
   // 群消息不逐条入库：本脚本只给出该群既有 doc 路由记录，宿主按时间窗累积后再抽取。
-  const chatRoutes = m.chatId && ctx.appToken
-    ? (await queryByKind(ctx, 'doc').catch(() => [])).filter((r) => (r.source_id || '').startsWith(m.chatId)) : [];
+  // chatId 缺失则不查（避免 startsWith(undefined) 失配）；用分隔符 ':' 防前缀串台（oc_1 误命中 oc_1234）。
+  // 约定：群聊 source_id 形如 `<chatId>:<时间窗>`。查询失败不静默吞，让其上抛。
+  let chatRoutes = [];
+  if (m.chatId && ctx.appToken) {
+    const all = await queryByKind(ctx, 'doc');
+    chatRoutes = all.filter((r) => (r.source_id || '').startsWith(`${m.chatId}:`));
+  }
   return {
     eventKey: 'im.message.receive_v1',
     line: m.mentionsBot ? 'comment-or-chat(@机器人：可能文档评论兜底/群沉淀触发)' : 'chat',
     message: m,
     chatDocRoutes: chatRoutes,
     hint: '群聊沉淀：勿逐条入库。累积时间窗/消息数后（或 digest 定时拉取）由你抽取决策/结论/待办/FAQ、丢闲聊 → '
-      + 'extract.normalizeItems 去重 → route-io.decideRoute 去重判定 → kb-write 更新「群聊沉淀」小节 → recordRoute（source_id=chatId+时间窗）。'
+      + 'extract.normalizeItems 去重 → route-io.decideRoute 去重判定 → doc 更新「群聊沉淀」小节 → recordRoute（source_id=chatId+时间窗）。'
       + ' 若为 @机器人 的文档内提及（评论兜底）：用 comment.readDocBody + comment.listComments 读上下文 → comment.replyToComment 回复 → recordRoute(source_type=comment, source_id=comment_id)。',
   };
 }

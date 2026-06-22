@@ -4,10 +4,8 @@
   "private": true,
   "type": "module",
   "description": "飞书收集数字员工：上传文档/表格 + @机器人 → 群里/私信对话收集、清洗确认、幂等写回、自动催办与收工汇报。可移植 skill（Claude Code/OpenClaw/Hermes 通用）。",
+  "comment": "编排器：领域逻辑与单测已下沉到 skills/atoms/* 与 feishu-shared；本包只剩 bin 入口，test 做语法冒烟。",
   "scripts": {
-    "test": "node --test test/",
-    "test:unit": "node --test test/hash.test.js test/state.test.js test/clean.test.js test/schedule.test.js test/locator.test.js",
-    "test:int": "node --test test/base-io.test.js",
-    "test:e2e": "node --test test/e2e.test.js"
+    "test": "node --check bin/on-message.js && node --check bin/tick.js && node --check bin/setup-base.js"
   }
 }
