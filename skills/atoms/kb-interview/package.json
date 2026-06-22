@@ -1,0 +1,10 @@
+{
+  "name": "kb-interview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·通用访谈模板。冷启动无文档时，书童按通用题库逐项主动发问（公司简介/成员/项目/OKR/制度），把答案写进对应知识库节点。纯函数：题库 + 取下一题 + 答案→KB写入格式（空答案跳过，缺失不编造）。问/收/确认由 feishu-init 大脑进行，写回用 feishu-shared/doc。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

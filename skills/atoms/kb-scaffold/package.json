@@ -1,0 +1,10 @@
+{
+  "name": "kb-scaffold",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "原子·知识库骨架。标准节点树（纯数据）+ planScaffold（对比已存在节点产出待建清单，幂等）+ createTree（幂等建 Wiki 节点树，复用 feishu-shared/doc.createWikiNode）。冷启动让 kb-maintainer 的 routing 有落点。",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}
