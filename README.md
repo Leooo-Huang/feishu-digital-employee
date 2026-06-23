@@ -356,6 +356,132 @@ ls ~/.hermes/skills/ | grep feishu
 
 在飞书上给机器人发"你好"，确认书童引导正常响应。
 
+## 多公司部署（多 Profile + Kanban）
+
+当你需要为多家公司各跑一个飞书数字员工时，不要在一个 profile 上塞所有东西。用 Hermes 的 **Profile + Kanban** 机制：
+
+- 每家公司一个独立 profile（独立 SOUL.md、.env、Gateway、会话、记忆）
+- 总指挥 profile（微信/Telegram）通过 Kanban 看板分派任务给各 worker
+
+### 架构
+
+```
+┌─────────────────────────┐
+│  default profile (总指挥)  │  ← 微信/Telegram，只连一个 IM
+│  Kanban dispatcher       │
+└────┬──────────┬──────────┘
+     │          │
+     ▼          ▼
+┌──────────┐ ┌──────────┐
+│ worker-A │ │ worker-B │ ...  ← 每个公司一个 profile，只连飞书
+│ (公司A)   │ │ (公司B)   │
+└──────────┘ └──────────┘
+```
+
+**关键：每个 profile 独立运行自己的 Gateway 进程。** 两个 profile 连同一个飞书 App 会导致 WebSocket 抢连——每个公司必须有独立的飞书应用（独立 App ID/Secret）。
+
+### 步骤
+
+**1. 为每家公司创建飞书应用**
+
+在飞书开放平台为每家公司各创建一个应用，分别拿到 App ID / Secret。每个应用有独立的 bot 身份和权限。
+
+**2. 为每家公司创建 Hermes profile**
+
+```bash
+hermes profile create worker-A --description "公司A飞书数字员工：信息收集 + 知识库维护"
+hermes profile create worker-B --description "公司B飞书数字员工：信息收集 + 知识库维护"
+```
+
+**3. 配置每个 worker profile**
+
+对每个 profile，编辑 `~/.hermes/profiles/<name>/` 下的三个文件：
+
+`.env` — 飞书凭证 + 该公司的 Base Token（只写必要的，不要从 default clone 过来一大堆无关变量）：
+
+```env
+FEISHU_APP_ID=cli_xxx
+FEISHU_APP_SECRET=xxx
+FEISHU_DOMAIN=feishu
+FEISHU_CONNECTION_MODE=websocket
+FEISHU_HOME_CHANNEL=oc_xxx
+COLLECTOR_APP_TOKEN=xxx
+COLLECTOR_TASKS_TABLE=xxx
+COLLECTOR_SLOTS_TABLE=xxx
+KB_APP_TOKEN=xxx
+KB_ROUTE_TABLE=xxx
+```
+
+`config.yaml` — 只启用飞书，禁用其他平台：
+
+```bash
+worker-A config set platforms.feishu.enabled true
+worker-A config set platforms.feishu.connection_mode websocket
+worker-A config set platforms.weixin.enabled false
+# 设置 model 和 provider（跟 default 一致即可）
+worker-A config set model.default <model>
+worker-A config set model.provider <provider>
+worker-A config set model.base_url <url>
+worker-A config set model.api_key <key>
+```
+
+`SOUL.md` — 写入该公司的数字员工身份（参考本项目 skills/feishu-init/ 中的引导内容）。
+
+**4. 安装 Skills 到每个 worker profile**
+
+```bash
+cp -r skills/feishu-init ~/.hermes/profiles/worker-A/skills/
+cp -r skills/feishu-collector ~/.hermes/profiles/worker-A/skills/
+cp -r skills/feishu-kb-maintainer ~/.hermes/profiles/worker-A/skills/
+cp -r skills/feishu-shared ~/.hermes/profiles/worker-A/skills/
+cp -r skills/atoms ~/.hermes/profiles/worker-A/skills/
+```
+
+**5. 创建该公司的 Base**
+
+用 lark-cli 以 user 身份为该公司创建状态库（每家公司独立的 Base）：
+
+```bash
+lark-cli auth login --device-code   # 用该公司飞书应用授权
+node skills/feishu-collector/bin/setup-base.js
+node skills/feishu-kb-maintainer/bin/setup-route-base.js
+```
+
+将输出的 token 写入对应 profile 的 `.env`。
+
+**6. 安装 Gateway 服务并启动**
+
+```bash
+worker-A gateway install   # 安装 systemd service
+worker-A gateway start      # 启动
+```
+
+**7. 批准配对**
+
+每个 worker profile 首次启动后需要在飞书上发消息触发配对：
+
+```bash
+worker-A pairing approve feishu <配对码>
+```
+
+**8. 初始化 Kanban 看板**
+
+在总指挥 profile（default）上初始化：
+
+```bash
+hermes kanban init    # 自动发现所有 profile
+```
+
+之后总指挥创建任务、分配给 worker，Gateway 内置 dispatcher 每 60 秒自动 tick 分发。
+
+### 避坑
+
+- **不要手动建 profile 目录**。用 `hermes profile create`，否则缺 profile.yaml、alias、systemd service。
+- **不要 clone .env**。`--clone` 会把 default 的所有环境变量带过来（包括微信凭证等无关变量），应该手动写干净的 .env。
+- **model 配置要完整**。`config.yaml` 的 `model:` 块下必须有 `default`、`provider`、`base_url`、`api_key`，缺任何一个都会报 `No LLM provider configured`。
+- **不要反复重启 Gateway**。所有配置改完验证后再一次性重启。每次重启断开所有平台连接。
+- **每个飞书应用必须独立**。两个 profile 不能连同一个飞书应用的 WebSocket。
+
 ## 测试
 
 两条线均以单元测试覆盖确定性核心(幂等指纹、状态机、清洗归一、催办挑选、路由决策、抽取去重),不依赖网络。
