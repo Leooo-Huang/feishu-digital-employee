@@ -425,7 +425,7 @@ worker-A config set model.base_url <url>
 worker-A config set model.api_key <key>
 ```
 
-`SOUL.md` — 写入该公司的数字员工身份（参考本项目 skills/feishu-init/ 中的引导内容）。
+`SOUL.md` — 写入该公司的数字员工身份。可直接使用本项目 `config/SOUL.md` 模板，或根据公司场景微调。
 
 **4. 安装 Skills 到每个 worker profile**
 
