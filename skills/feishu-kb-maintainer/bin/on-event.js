@@ -34,6 +34,7 @@ async function readEvent() {
 function eventKeyOf(ev) {
   return ev.event_key || ev.key || ev.header?.event_type || ev.schema_key
     || (ev.event?.minute_token || ev.minute_token ? 'minutes.minute.generated_v1' : null)
+    || (ev.event?.meeting_id || ev.event?.note?.meeting_id || ev.meeting_id ? 'vc.note.generated_v1' : null)
     || (ev.event?.message || ev.message ? 'im.message.receive_v1' : null);
 }
 
@@ -60,6 +61,16 @@ function extractMinute(ev) {
   };
 }
 
+function extractVcNote(ev) {
+  const e = ev.event || ev;
+  return {
+    meetingId: e.meeting_id || e.note?.meeting_id,
+    noteId: e.note_id || e.note?.note_id,
+    noteDocToken: e.note_doc_token || e.note?.note_doc_token,
+    eventId: e.event_id,
+  };
+}
+
 async function handleMinute(ev) {
   const minute = extractMinute(ev);
   // 幂等前置：按 source_id=minute_token 查路由幂等表，已记录则提示宿主可能 skip。
@@ -75,6 +86,28 @@ async function handleMinute(ev) {
       + 'extract.normalizeItems 归一去重 → 按 route-io.decideRoute 判定 write/update/skip → '
       + 'doc 追加纪要段（决策汇入 Decision Log）、task.createTask 写行动项、okr.createProgress 写 KR 进展 → '
       + 'route-io.recordRoute 回写。source_id=minute_token，target_kind 按落点 doc/task/okr。',
+  };
+}
+
+async function handleVcNote(ev) {
+  const vcNote = extractVcNote(ev);
+  // 幂等前置：按 source_id=meeting_id 查路由幂等表。
+  const existing = vcNote.meetingId && ctx.appToken
+    ? await querySource(ctx, vcNote.meetingId) : null;
+  return {
+    eventKey: 'vc.note.generated_v1',
+    line: 'meeting-ai-summary',
+    vcNote,
+    routeExisting: existing,
+    hint: '会议 AI Summary 沉淀：'
+      + (vcNote.noteDocToken
+        ? `事件已携带 note_doc_token=${vcNote.noteDocToken}，可直接 doc.fetchDoc(${vcNote.noteDocToken}) 取全文。`
+        : `用 minutes.fetchMeetingNotes({meetingIds:['${vcNote.meetingId}']}) 取 note_doc_token/note_id/verbatim_doc_token → `
+          + `doc.fetchDoc(note_doc_token) 取 AI Summary 全文。`)
+      + ' → 你基于全文抽取决策/待办/结论 → extract.normalizeItems 归一去重 → '
+      + '按 route-io.decideRoute 判定 write/update/skip → '
+      + 'doc 追加纪要段（决策汇入 Decision Log）、task.createTask 写行动项、okr.createProgress 写 KR 进展 → '
+      + 'route-io.recordRoute 回写。source_id=meeting_id，target_kind 按落点 doc/task/okr。',
   };
 }
 
@@ -104,6 +137,7 @@ async function main() {
   const key = eventKeyOf(ev);
   let out;
   if (key === 'minutes.minute.generated_v1') out = await handleMinute(ev);
+  else if (key === 'vc.note.generated_v1') out = await handleVcNote(ev);
   else if (key === 'im.message.receive_v1') out = await handleMessage(ev);
   else out = { eventKey: key || 'unknown', line: 'ignore', hint: '非知识库线事件，忽略。', raw: ev };
   console.log(JSON.stringify(out, null, 2));

@@ -58,3 +58,33 @@ export async function fetchNotes({ minuteToken, meetingIds, calendarEventIds }, 
     raw: res,
   };
 }
+
+/**
+ * 按 meeting_id 取 AI Summary 产品（智能纪要文档）。
+ * 与 fetchNotes 不同：本函数聚焦 AI Summary 链路，返回 note_doc_token 供 doc.fetchDoc 使用。
+ *
+ * 命令：vc +notes --meeting-ids <m,..> --as user --format json
+ * 响应包含 note_doc_token / note_id / verbatim_doc_token 等 AI Summary 产品字段。
+ *
+ * @returns {{noteDocToken, noteId, verbatimDocToken, minuteToken, noteDisplayType, items, raw}}
+ */
+export async function fetchMeetingNotes({ meetingIds }, { profile } = {}) {
+  const argv = ['vc', '+notes', '--as', 'user', '--format', 'json'];
+  if (meetingIds?.length) argv.push('--meeting-ids', meetingIds.join(','));
+  const res = await larkJson(argv, { profile });
+  // 响应可能是单对象或数组包裹，防御性多路径解析
+  const item = pickFirst(res, [
+    'items.0', 'data.items.0', 'data', 'notes.0', 'note', '0',
+  ]) || res;
+  return {
+    noteDocToken: pickFirst(item, ['note_doc_token', 'note_document.doc_token',
+      'smart_summary.doc_token', 'ai_summary_note_token']),
+    noteId: pickFirst(item, ['note_id', 'id']),
+    verbatimDocToken: pickFirst(item, ['verbatim_doc_token', 'verbatim_document.doc_token',
+      'transcript_doc_token']),
+    minuteToken: pickFirst(item, ['minute_token']),  // 若该会议同时有录音，可能携带
+    noteDisplayType: pickFirst(item, ['note_display_type', 'display_type']),
+    items: Array.isArray(pickFirst(res, ['items', 'data.items', 'notes'])) ? res : res,
+    raw: res,
+  };
+}
