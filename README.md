@@ -331,6 +331,37 @@ cp -r skills/atoms ~/.hermes/skills/
 | `okr:okr` | OKR 读写 |
 | `im:message.group_msg`（敏感） | 群聊全量读取，需管理员审批；未获批时退化为机器人被 @ 提及时归档 |
 
+### 九、订阅飞书事件（关键：否则开完会收不到妙记事件）
+
+会议妙记事件（`minutes.minute.generated_v1` / `vc.note.generated_v1`）是 **user 授权**事件，**不经 Hermes bot 网关推送**——不显式订阅就收不到，会议沉淀线断链。用统一入口订阅全部必要事件：
+
+```bash
+# 看订阅计划 + 事件总线 daemon 自检（只读，安全）
+node skills/feishu-init/bin/init.js setup-events
+
+# 长驻订阅（minutes/vc/im.message/bot.added 全部桥接到各 handler）
+node skills/feishu-init/bin/init.js setup-events --start
+```
+
+`setup-events --start` 是长驻进程，**交进程托管**（systemd 用户服务，`Restart=always`）：
+
+```ini
+# ~/.config/systemd/user/feishu-events.service
+[Service]
+ExecStart=/usr/bin/node %h/.hermes/skills/feishu-init/bin/init.js setup-events --start
+Restart=always
+RestartSec=2
+Environment=LARK_PROFILE=worker-A      # 多公司时指定 profile
+```
+
+```bash
+systemctl --user enable --now feishu-events
+lark-cli event status   # 确认 daemon 在线、各 consumer 已订阅
+```
+
+> ⚠️ **不要用裸管道** `lark-cli event consume KEY | node on-event.js`：`event consume` 是无限 NDJSON 流（永不 EOF），处理脚本读 stdin 到 EOF 才动、且只取首行 → 会永久缓冲、最多处理 1 条。`setup-events` 内部用 bridge（逐行 `node <handler> --event '<line>'`）规避此坑。
+> ⚠️ 飞书每个 App **全局只允许一个 event bus 连接**：多公司部署须每公司独立 App（独立 AppID）+ 独立 profile，不可两个 profile 连同一 App。
+
 ### 前置条件摘要
 
 - **lark-cli**：官方 `@larksuite/cli`，已完成 `config init` 和 `config bind`
@@ -340,6 +371,7 @@ cp -r skills/atoms ~/.hermes/skills/
 - **Skills**：已挂载到 `~/.hermes/skills/`
 - **环境变量**：`~/.hermes/.env` 中所有 token 已写入
 - **应用权限**：飞书开放平台权限已开通并发布版本
+- **事件订阅**：`setup-events --start` 已由 systemd 托管运行（`event status` 可见在线）
 
 ### 验证
 

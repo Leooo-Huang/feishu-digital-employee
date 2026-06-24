@@ -6,6 +6,6 @@
   "description": "飞书知识库自动维护数字员工（被动沉淀）：会议/群聊/文档评论 → 抽取决策/待办/结论/FAQ/进展 → 智能路由 + content_hash 幂等 → 写回 Wiki 文档/原生 Task/原生 OKR/评论串，周期汇总成周报。可移植 skill（Claude Code/OpenClaw/Hermes 通用）。",
   "comment": "编排器：领域逻辑与单测已下沉到 skills/atoms/* 与 feishu-shared；本包只剩 bin 入口，test 做语法冒烟。",
   "scripts": {
-    "test": "node --check bin/on-event.js && node --check bin/digest.js && node --check bin/setup-route-base.js"
+    "test": "node --check bin/on-event.js && node --check bin/setup-route-base.js && node --test"
   }
 }

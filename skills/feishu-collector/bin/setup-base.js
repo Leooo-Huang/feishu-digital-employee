@@ -86,6 +86,10 @@ async function main() {
   console.log(`COLLECTOR_APP_TOKEN=${appToken}`);
   console.log('COLLECTOR_TASKS_TABLE=任务表');
   console.log('COLLECTOR_SLOTS_TABLE=槽位表');
+
+  console.log('\n下一步：订阅飞书事件（否则收不到 @机器人 指令 / 收集对象的群聊回复）：');
+  console.log('  node skills/feishu-init/bin/init.js setup-events            # 看订阅计划 + daemon 自检');
+  console.log('  node skills/feishu-init/bin/init.js setup-events --start    # 长驻订阅（建议交 systemd 托管）');
 }
 
 main().catch((e) => { console.error('建表失败：', e.message); process.exit(1); });

@@ -15,7 +15,7 @@ const pexec = promisify(execFile);
 // 默认超时 60s，可用 LARK_CLI_TIMEOUT_MS 覆盖。
 const DEFAULT_TIMEOUT_MS = Number(process.env.LARK_CLI_TIMEOUT_MS) || 60_000;
 
-function resolveLark() {
+export function resolveLark() {
   if (process.env.LARK_CLI_ENTRY) return { cmd: process.execPath, pre: [process.env.LARK_CLI_ENTRY] };
   if (process.env.LARK_CLI_BIN) return { cmd: process.env.LARK_CLI_BIN, pre: [] };
   const rel = join('node_modules', '@larksuite', 'cli', 'scripts', 'run.js');

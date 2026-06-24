@@ -61,6 +61,10 @@ async function main() {
   console.log('\n请把以下写入运行环境（on-event/digest 用）：');
   console.log(`KB_APP_TOKEN=${appToken}`);
   console.log('KB_ROUTE_TABLE=路由幂等表');
+
+  console.log('\n下一步：订阅飞书事件（否则开完会收不到妙记事件，会议沉淀线不工作）：');
+  console.log('  node skills/feishu-init/bin/init.js setup-events            # 看订阅计划 + daemon 自检');
+  console.log('  node skills/feishu-init/bin/init.js setup-events --start    # 长驻订阅（建议交 systemd 托管）');
 }
 
 main().catch((e) => { console.error('建表失败：', e.message); process.exit(1); });

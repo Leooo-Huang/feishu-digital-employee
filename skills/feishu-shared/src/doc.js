@@ -86,4 +86,33 @@ export async function createWikiNode({ title, spaceId, parentNodeToken, objType 
   return larkJson(argv, { profile });
 }
 
+// ── Wiki 知识空间/节点封装（冷启动自动建骨架用，实测 lark-cli 1.0.56）──
+// wiki +space-list 默认单页(50条)，须 --page-all 才不漏判；space-create 仅 --as user 且无去重；
+// node-list 列顶层节点（给 --parent-node-token 则列其子级）。
+
+/** 列出当前身份可见的全部知识空间（--page-all）。返回 items[]，每项含 {space_id, name}。 */
+export async function listWikiSpaces({ profile } = {}) {
+  const res = await larkJson(['wiki', '+space-list', '--page-all', '--as', 'user', '--format', 'json'], { profile });
+  return res?.items || res?.spaces || res?.data?.items || [];
+}
+
+/** 建知识空间（仅 --as user）。返回 {spaceId, raw}；spaceId 防御性多路径解析。 */
+export async function createWikiSpace(name, { profile, description } = {}) {
+  if (!name) throw new Error('wiki +space-create 缺 --name（未命名空间几乎必是误建）');
+  const argv = ['wiki', '+space-create', '--name', name, '--as', 'user', '--format', 'json'];
+  if (description) argv.push('--description', description);
+  const res = await larkJson(argv, { profile });
+  const spaceId = pickFirst(res, ['space.space_id', 'space_id', 'data.space.space_id', 'data.space_id']);
+  if (!spaceId) throw new Error(`wiki +space-create 未拿到 space_id：${JSON.stringify(res).slice(0, 300)}`);
+  return { spaceId, raw: res };
+}
+
+/** 列知识空间内节点（--page-all）。省略 parentNodeToken=顶层；给则列该节点子级。返回原始响应。 */
+export async function listWikiNodes(spaceId, { profile, parentNodeToken } = {}) {
+  if (!spaceId) throw new Error('wiki +node-list 缺 space-id');
+  const argv = ['wiki', '+node-list', '--space-id', spaceId, '--page-all', '--as', 'user', '--format', 'json'];
+  if (parentNodeToken) argv.push('--parent-node-token', parentNodeToken);
+  return larkJson(argv, { profile });
+}
+
 export { lark };

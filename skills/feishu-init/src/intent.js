@@ -11,3 +11,16 @@ export function classifyInit(text = '') {
   if (/^(你好|您好|hi|hello|在吗|开始|start|嗨)/.test(t) || /你是谁|介绍下你/.test(t)) return 'welcome';
   return 'unknown';
 }
+
+// 从飞书事件对象识别 EventKey（对标 kb-maintainer/on-event.js）。
+// 显式 key 字段优先；入群事件结构与消息事件差异大且结构推断有歧义，故只认显式 key，不做结构兜底。
+export function eventKeyOf(ev = {}) {
+  return ev.event_key || ev.key || ev.header?.event_type || ev.schema_key
+    || (ev.event?.message || ev.message ? 'im.message.receive_v1' : null);
+}
+
+// 事件 → init 意图。bot 入群（首次接触）触发欢迎；其余引导事件暂无 → null（交文本分类/忽略）。
+export function classifyEvent(eventKey) {
+  if (eventKey === 'im.chat.member.bot.added_v1') return 'welcome';
+  return null;
+}

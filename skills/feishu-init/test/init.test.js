@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyInit } from '../src/intent.js';
+import { classifyInit, classifyEvent, eventKeyOf } from '../src/intent.js';
 import { welcomeText, capabilityMenuText, coldStartChoiceText, healthReportText } from '../src/cards.js';
 
 test('classifyInit：意图分类', () => {
@@ -15,6 +15,19 @@ test('classifyInit：意图分类', () => {
   assert.equal(classifyInit('访谈'), 'interview');
   assert.equal(classifyInit('导入资料'), 'import');
   assert.equal(classifyInit('今天天气不错'), 'unknown');
+});
+
+test('eventKeyOf：显式 key 优先，消息事件结构兜底', () => {
+  assert.equal(eventKeyOf({ header: { event_type: 'im.chat.member.bot.added_v1' } }), 'im.chat.member.bot.added_v1');
+  assert.equal(eventKeyOf({ event_key: 'im.message.receive_v1' }), 'im.message.receive_v1');
+  assert.equal(eventKeyOf({ event: { message: { content: '{}' } } }), 'im.message.receive_v1');
+  assert.equal(eventKeyOf({}), null);
+});
+
+test('classifyEvent：bot 入群 → welcome；其余 → null', () => {
+  assert.equal(classifyEvent('im.chat.member.bot.added_v1'), 'welcome');
+  assert.equal(classifyEvent('im.message.receive_v1'), null);
+  assert.equal(classifyEvent(null), null);
 });
 
 test('welcomeText：含书童自我介绍与三选项', () => {
