@@ -9,11 +9,11 @@
 - [x] Hermes Agent 已安装
 - [x] 服务器上已有至少一个正常运行的飞书 worker profile（如 `feishu-worker`）
 
+> ⚠️ **第一件事：先读已有 worker 的 `.env` 作为模板！** `cat ~/.hermes/profiles/feishu-worker/.env`，逐字段对比，确保新 profile 覆盖所有必要字段。**不要凭记忆写 .env。**
+
 ---
 
 ## Phase 0：信息收集（全部确认后再动手）
-
-在开始之前，**一次性收集所有信息**：
 
 ```
 新公司名称：____________
@@ -41,7 +41,6 @@ model：____________（默认跟随 default profile）
 ### 1.2 初始化 lark-cli named profile
 
 ```bash
-# ⚠️ 必须清除 HERMES 环境变量，否则会干扰
 env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
   lark-cli config init --name <profile名> --force-init
 ```
@@ -56,9 +55,9 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
   lark-cli --profile <profile名> config show
 ```
 
-确认输出中 `appId` 是**新公司的 App ID**（不是其他公司的）。
+确认 `appId` 是**新公司的 App ID**。
 
-> 💡 **踩坑**：lark-cli 切换 profile 用 `--profile <name>` 参数，**不是** `LARK_PROFILE` 环境变量。不要用环境变量切换 profile。
+> 💡 lark-cli 切换 profile 用 `--profile <name>` 参数，**不是** `LARK_PROFILE` 环境变量。
 
 ---
 
@@ -86,10 +85,10 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 
 ### 2.3 发送二维码给用户
 
-将 `verification_url` 和二维码图片发给用户，**等待用户完成授权**。
+将 URL 和二维码图片发给用户，**等待用户完成授权**。
 
 > ⚠️ **踩坑**：
-> - device_code 有效期 600 秒，超时需要重新生成
+> - device_code 有效期 600 秒
 > - **不要**生成后立刻阻塞等 device-code，**不要**短 timeout 反复重试
 > - 每次重新调用 `auth login --device-code` 会**作废上一个 device code**
 > - 正确流程：生成 → 发给用户 → 等用户回复已完成 → 再续轮询
@@ -105,13 +104,6 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 
 成功后输出 `OK: 授权成功! 用户: <名字>`。
 
-### 2.5 验证
-
-```bash
-env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
-  lark-cli --profile <profile名> auth status
-```
-
 ---
 
 ## Phase 3：创建 Hermes Profile
@@ -122,29 +114,22 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 hermes profile create <profile名> --description "<公司名>飞书数字员工"
 ```
 
-这会创建 `~/.hermes/profiles/<profile名>/` 目录，包含 `SOUL.md`、`config.yaml`、profile.yaml。
-
 ### 3.2 配置 config.yaml
 
 ```bash
-# 模型配置（跟 default profile 一致）
 hermes -p <profile名> config set model.default <model>
 hermes -p <profile名> config set model.provider <provider>
 hermes -p <profile名> config set model.base_url <url>
 hermes -p <profile名> config set model.api_key <key>
-
-# 平台配置
 hermes -p <profile名> config set platforms.feishu.enabled true
 hermes -p <profile名> config set platforms.feishu.connection_mode websocket
 hermes -p <profile名> config set platforms.weixin.enabled false
 ```
 
-### 3.3 写入 .env
+### 3.3 写入 .env（⚠️ 最容易出错的一步）
 
-> ⚠️ **关键踩坑**：终端/CLI 工具会对 `FEISHU_APP_SECRET` 等 secret 值做脱敏截断（只显示前几个字符 + `...`）。
-> **不要用 terminal 的 heredoc/cat/echo 写入 secret 值，必须用 Python `write_file` 或 `execute_code` 直接写文件。**
-
-正确做法 — 用 Python 解密并写入（不受终端脱敏影响）：
+> ⚠️ **关键踩坑**：终端/CLI 工具会对 `FEISHU_APP_SECRET` 等 secret 值做脱敏截断。
+> **不要用 terminal 的 heredoc/cat/echo 写入 secret 值，必须用 Python 直接写文件。**
 
 ```python
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -158,16 +143,21 @@ with open(os.path.expanduser(enc_path), 'rb') as f:
     enc = f.read()
 secret = AESGCM(key).decrypt(enc[:12], enc[12:], None).decode()
 
-# 写入 .env（用 Python 直接写，不要用终端 heredoc）
+# ⚠️ 用 Python 直接写文件，不要用终端 heredoc（会被脱敏截断）
 env_content = f"""FEISHU_APP_ID=<APP_ID>
-FEISHU_APP_SECRET={secret}
-GATEWAY_ALLOW_ALL_USERS=true
-"""
-with open(os.path.expanduser(f'~/.hermes/profiles/<profile名>/.env'), 'w') as f:
+FEISHU_APP_SECRET=*** = "*** open(os.path.expanduser(f'~/.hermes/profiles/<profile名>/.env'), 'w') as f:
     f.write(env_content)
 ```
 
-> ⚠️ **另一踩坑**：`GATEWAY_ALLOW_ALL_USERS=true` 如果不写，Gateway 会拒绝所有消息并提示 `No user allowlists configured`。
+> ⚠️ **必填字段说明（每一个漏了都会出问题）：**
+>
+> | 字段 | 不写的后果 |
+> |---|---|
+> | `GATEWAY_ALLOW_ALL_USERS=true` | Gateway 拒绝所有消息 |
+> | `FEISHU_GROUP_POLICY=open` | **群消息全部被拒绝**（默认 `allowlist`，但没配白名单） |
+> | `FEISHU_HOME_CHANNEL` | 机器人无处回复群消息（可选） |
+>
+> `FEISHU_GROUP_POLICY` 可选值：`open` / `allowlist`（需配 `FEISHU_ALLOWED_USERS`）/ `blacklist` / `disabled`
 
 ### 3.4 验证 .env
 
@@ -182,22 +172,7 @@ xxd ~/.hermes/profiles/<profile名>/.env | head -20
 ```bash
 cat > ~/.hermes/profiles/<profile名>/SOUL.md << 'EOF'
 你是「<公司名>数字员工」，一个工作在飞书上的 AI 助手。
-
-## 身份
-- 你是<公司名>公司的专属 AI 数字员工
-- 通过飞书与团队成员协作
-- 语言：中文
-
-## 核心能力
-1. **信息收集**：通过飞书多维表格收集成员信息
-2. **知识库维护**：自动从会议纪要、讨论、文档中提取要点
-3. **周报生成**：基于知识库台账自动生成周报素材
-4. **日常协助**：回答问题、整理文档、总结内容
-
-## 工作原则
-- 主动、简洁、有条理
-- 不确定时先确认再行动
-- 处理完任务后主动汇报结果
+...
 EOF
 ```
 
@@ -207,29 +182,22 @@ EOF
 
 ```bash
 WORKER_SKILLS=~/.hermes/profiles/<profile名>/skills
-SOURCE_SKILLS=<项目目录>/skills  # 或从已有 worker 复制
+SOURCE_SKILLS=<项目目录>/skills
 
-# 复制飞书相关 skills
 cp -r $SOURCE_SKILLS/feishu-init $WORKER_SKILLS/
 cp -r $SOURCE_SKILLS/feishu-collector $WORKER_SKILLS/
 cp -r $SOURCE_SKILLS/feishu-kb-maintainer $WORKER_SKILLS/
 cp -r $SOURCE_SKILLS/feishu-shared $WORKER_SKILLS/
-
-# atoms 必须保持扁平结构！不要放到 feishu-atoms/ 子目录下
 cp -r $SOURCE_SKILLS/atoms $WORKER_SKILLS/
 ```
 
-> ⚠️ **关键踩坑**：atoms 目录必须是 `skills/atoms/`，不能是 `skills/feishu-atoms/`。多个 skill（如 scaffold-check.js）用相对路径 `../../atoms/` 引用。
+> ⚠️ atoms 必须是 `skills/atoms/`，不能是 `skills/feishu-atoms/`（相对路径 import 会断）。
 
 ---
 
 ## Phase 5：创建 Base（状态库）
 
-### 5.1 用 lark-cli user 身份创建表
-
 ```bash
-# ⚠️ 必须指定 --profile
-cd <项目目录>
 env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
   lark-cli --profile <profile名> exec -- node skills/feishu-collector/bin/setup-base.js
 
@@ -237,49 +205,17 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
   lark-cli --profile <profile名> exec -- node skills/feishu-kb-maintainer/bin/setup-route-base.js
 ```
 
-### 5.2 记录输出的 token
-
-将输出的 `COLLECTOR_APP_TOKEN`、`COLLECTOR_TASKS_TABLE`、`COLLECTOR_SLOTS_TABLE`、`KB_APP_TOKEN`、`KB_ROUTE_TABLE` 追加到 profile 的 `.env`：
-
-```python
-# 用 Python 追加，不要用终端 heredoc
-additional_env = """
-COLLECTOR_APP_TOKEN=<token>
-COLLECTOR_TASKS_TABLE=<table_id>
-COLLECTOR_SLOTS_TABLE=<table_id>
-KB_APP_TOKEN=<token>
-KB_ROUTE_TABLE=<table_id>
-"""
-with open('/home/ubuntu/.hermes/profiles/<profile名>/.env', 'a') as f:
-    f.write(additional_env)
-```
+将输出的 token 用 Python 追加到 .env（不要用终端 heredoc）。
 
 ---
 
 ## Phase 6：安装并启动 Gateway
 
-### 6.1 安装 systemd service
-
-```bash
-# 会提示 "Start now?" 和 "systemd linger?"，选 Y
-yes | <profile名> gateway install
-```
-
-或交互式（需要 2 次 Y）：
-
 ```bash
 echo -e "y\ny" | <profile名> gateway install
 ```
 
-### 6.2 启动 Gateway
-
-```bash
-<profile名> gateway start
-# 或如果 install 时已启动：
-<profile名> gateway status
-```
-
-### 6.3 验证连接
+验证连接：
 
 ```bash
 journalctl --user -u hermes-gateway-<profile名> --no-pager -n 20
@@ -287,13 +223,9 @@ journalctl --user -u hermes-gateway-<profile名> --no-pager -n 20
 
 确认看到 `[Lark] [INFO] connected to wss://msg-frontier.feishu.cn/...`。
 
-如果看到 `app_id or app_secret is invalid`，说明 Phase 3.3 的 .env 写入有问题（secret 被截断），回去修复。
-
 ---
 
 ## Phase 7：飞书配对
-
-首次启动后，Gateway 会显示 7 位配对码（如 `QHLNC8B3`），在飞书上给机器人发消息触发配对后：
 
 ```bash
 <profile名> pairing approve feishu <配对码>
@@ -304,11 +236,6 @@ journalctl --user -u hermes-gateway-<profile名> --no-pager -n 20
 ## Phase 8：事件订阅
 
 ```bash
-# 查看订阅计划
-env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
-  lark-cli --profile <profile名> exec -- node skills/feishu-init/bin/init.js setup-events
-
-# 启动长驻事件订阅
 env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
   lark-cli --profile <profile名> exec -- node skills/feishu-init/bin/init.js setup-events --start
 ```
@@ -328,16 +255,15 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 
 | 症状 | 原因 | 解决 |
 |---|---|---|
-| `app_id or app_secret is invalid` | .env 中 secret 被终端脱敏截断 | 用 Python 解密后直接写文件，不要用终端 heredoc |
+| `app_id or app_secret is invalid` | .env 中 secret 被终端脱敏截断 | 用 Python 解密后直接写文件 |
 | `No user allowlists configured` | .env 缺 `GATEWAY_ALLOW_ALL_USERS=true` | 追加到 .env |
-| `No LLM provider configured` | config.yaml 缺 model 配置 | 确认 4 个字段都有：default、provider、base_url、api_key |
-| 扫码后显示"没有 XX 助手权限" | device_code 关联了错误公司，或已过期 | 重新生成授权链接 |
-| Gateway 退出码 75 | 飞书连接失败 | 检查 .env app_secret 完整性 |
-| atoms import 报错 | atoms 目录结构不对（feishu-atoms/ 而非 atoms/） | 确保 `skills/atoms/` 扁平结构 |
-| 事件收不到 | 未订阅事件或 setup-events 未运行 | Phase 8 订阅并启动 |
+| 群消息无反应，私聊正常 | .env 缺 `FEISHU_GROUP_POLICY=open` | 追加到 .env |
+| `No LLM provider configured` | config.yaml 缺 model 配置 | 确认 4 个字段 |
+| 扫码后"没有 XX 助手权限" | device_code 关联了错误公司 | 重新生成授权链接 |
+| atoms import 报错 | atoms 放到了 `feishu-atoms/` | 确保扁平结构 `skills/atoms/` |
 
 ---
 
 ## 一句话总结
 
-> **收集信息 → lark-cli init → user 授权 → hermes profile create → 写 .env（用 Python）→ 同步 skills（保持 atoms 扁平）→ 建 Base → gateway install → 配对 → 事件订阅 → cron**
+> **先读已有 worker 的 .env → 收集信息 → lark-cli init → user 授权 → hermes profile create → 写 .env（用 Python，含 GROUP_POLICY）→ 同步 skills → 建 Base → gateway install → 配对 → 事件订阅 → cron**
