@@ -35,8 +35,14 @@ model：____________（默认跟随 default profile）
 
 **必须用 Hermes QR 扫码流程创建应用，它会自动配置好权限、事件订阅和版本发布。**
 
+> ⚠️ **顺序：先创建 Hermes profile，再在 profile 下运行 setup！** `hermes gateway setup` 会把凭证写入当前 profile 的 `.env`，profile 不存在就没地方写。
+
 ```bash
-hermes gateway setup
+# 1. 先创建 Hermes profile
+hermes profile create <profile名> --description "<公司名>飞书数字员工"
+
+# 2. 切换到该 profile，运行 setup wizard
+hermes --profile <profile名> gateway setup
 ```
 
 选择 **Feishu / Lark** → 扫码 → 自动创建完整应用。
@@ -113,15 +119,11 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 
 ---
 
-## Phase 3：创建 Hermes Profile
+## Phase 3：配置 Hermes Profile
 
-### 3.1 创建 profile
+> ⚠️ Profile 已在 Phase 1.1 通过 `hermes profile create` 创建，`hermes gateway setup` 已自动写入 .env。
 
-```bash
-hermes profile create <profile名> --description "<公司名>飞书数字员工"
-```
-
-### 3.2 配置 config.yaml
+### 3.1 配置 config.yaml
 
 ```bash
 hermes -p <profile名> config set model.default <model>

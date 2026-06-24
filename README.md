@@ -211,11 +211,17 @@ lark-cli --version   # 确认安装成功
 
 **推荐：用 Hermes Setup Wizard（QR 扫码）自动创建应用**
 
+> ⚠️ **顺序：先创建 Hermes profile，再在 profile 下运行 setup！**
+
 ```bash
-hermes gateway setup
+# 1. 先创建 Hermes profile
+hermes profile create <profile名> --description "<公司名>飞书数字员工"
+
+# 2. 切换到该 profile，运行 setup wizard
+hermes --profile <profile名> gateway setup
 ```
 
-选择 **Feishu / Lark** → 手机扫码 → 自动创建完整应用（含权限、事件订阅、版本发布）。
+选择 **Feishu / Lark** → 手机扫码 → 自动创建完整应用（含权限、事件订阅、版本发布），凭证自动写入当前 profile 的 `.env`。
 
 > ⚠️ **不要用 `lark-cli config init --new` 创建应用！** 它只创建空壳，不会自动配置事件订阅，导致群消息等事件不推送。
 
