@@ -207,31 +207,29 @@ npm install -g @larksuite/cli
 lark-cli --version   # 确认安装成功
 ```
 
-### 二、创建飞书应用 & 初始化 lark-cli 配置
+### 二、创建飞书应用
 
-1. **创建应用并获取凭证：**
-
-```bash
-lark-cli config init --new --force-init
-```
-
-如果命令因 Hermes 环境变量干扰卡住，先清除再运行：
+**推荐：用 Hermes Setup Wizard（QR 扫码）自动创建应用**
 
 ```bash
-env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE lark-cli config init --new --force-init
+hermes gateway setup
 ```
 
-2. **绑定到 Hermes：**
+选择 **Feishu / Lark** → 手机扫码 → 自动创建完整应用（含权限、事件订阅、版本发布）。
+
+> ⚠️ **不要用 `lark-cli config init --new` 创建应用！** 它只创建空壳，不会自动配置事件订阅，导致群消息等事件不推送。
+
+**备选：初始化 lark-cli（用于多维表格等管理操作）**
+
+Hermes QR 扫码会自动配好飞书应用，但 lark-cli 仍需单独初始化：
 
 ```bash
-lark-cli config bind
+env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE lark-cli config init --name <profile名> --force-init
 ```
-
-这会自动将 App ID / Secret 写入 `~/.hermes/config.yaml` 的 `feishu` 平台配置和 `~/.hermes/.env`。
 
 ### 三、配置 Hermes 飞书连接
 
-`lark-cli config bind` 通常会自动写入以下配置。如果没有，手动确认 `~/.hermes/config.yaml` 包含：
+`hermes gateway setup` 会自动写入以下配置。如果没有，手动确认 `~/.hermes/config.yaml` 包含：
 
 ```yaml
 feishu:
@@ -369,8 +367,8 @@ lark-cli event status   # 确认 daemon 在线、各 consumer 已订阅
 
 ### 前置条件摘要
 
-- **lark-cli**：官方 `@larksuite/cli`，已完成 `config init` 和 `config bind`
-- **Hermes Gateway**：运行中，飞书 WebSocket 已连接
+- **lark-cli**：官方 `@larksuite/cli`，已完成 `config init`
+- **Hermes Gateway**：通过 `hermes gateway setup`（QR 扫码）配置飞书连接
 - **用户授权**：`lark-cli auth login` 完成（用于创建 Base）
 - **状态库**：收集线任务表 + 槽位表、知识库线路由表已创建
 - **Skills**：已挂载到 `~/.hermes/skills/`

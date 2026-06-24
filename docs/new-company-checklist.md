@@ -31,14 +31,21 @@ model：____________（默认跟随 default profile）
 
 ## Phase 1：飞书应用创建
 
-### 1.1 在飞书开放平台创建应用
+### 1.1 用 Hermes Setup Wizard 创建应用（推荐）
 
-1. 打开 https://open.feishu.cn/app → 创建企业自建应用
-2. **确认是正确公司**（看左上角公司名！不要选错公司！）
-3. 创建后记录 App ID 和 App Secret
-4. 开通权限并**发布版本**
+**必须用 Hermes QR 扫码流程创建应用，它会自动配置好权限、事件订阅和版本发布。**
 
-### 1.2 初始化 lark-cli named profile
+```bash
+hermes gateway setup
+```
+
+选择 **Feishu / Lark** → 扫码 → 自动创建完整应用。
+
+> ⚠️ **不要用 `lark-cli config init --new` 创建应用！** 它只创建空壳，不会自动配置事件订阅，导致群消息等事件不推送。
+
+### 1.2 初始化 lark-cli named profile（用于多维表格等操作）
+
+Hermes QR 扫码会自动配好飞书应用，但 lark-cli 仍需单独初始化才能执行多维表格等管理操作：
 
 ```bash
 env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
