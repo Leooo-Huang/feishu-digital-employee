@@ -211,27 +211,26 @@ lark-cli --version   # 确认安装成功
 
 **推荐：用 Hermes Setup Wizard（QR 扫码）自动创建应用**
 
-> ⚠️ **顺序：先创建 Hermes profile，再在 profile 下运行 setup！**
+> ⚠️ **顺序：先创建 Hermes profile，再在 profile 下运行 setup！** `gateway setup` 把凭证写入当前 profile 的 `.env`，profile 不存在就没地方写。
 
 ```bash
 # 1. 先创建 Hermes profile
 hermes profile create <profile名> --description "<公司名>飞书数字员工"
 
-# 2. 切换到该 profile，运行 setup wizard
+# 2. 在 profile 下运行 setup wizard（交互式）
 hermes --profile <profile名> gateway setup
 ```
 
-选择 **Feishu / Lark** → 手机扫码 → 自动创建完整应用（含权限、事件订阅、版本发布），凭证自动写入当前 profile 的 `.env`。
+交互流程：选 Feishu/Lark → Scan QR code → 扫码 → Allow all DM → @mention in groups → Done → 不启动。
 
-> ⚠️ **不要用 `lark-cli config init --new` 创建应用！** 它只创建空壳，不会自动配置事件订阅，导致群消息等事件不推送。
+> ⚠️ **绝对不要用 `lark-cli config init --new` 创建应用！** 它只创建空壳，不会自动配置事件订阅和版本发布，导致群消息不推送。
 
-**备选：初始化 lark-cli（用于多维表格等管理操作）**
+**同步 lark-cli profile（必须！）**
 
-Hermes QR 扫码会自动配好飞书应用，但 lark-cli 仍需单独初始化：
+Hermes QR 扫码创建了新应用（新 App ID），但 lark-cli named profile 不会自动更新，必须手动同步：
 
-```bash
-env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE lark-cli config init --name <profile名> --force-init
-```
+1. 编辑 `~/.lark-cli/hermes/config.json`，把对应 profile 的 `appId` 改为新 App ID
+2. 用 Python AESGCM 加密 App Secret 后以**二进制格式**写入 `~/.local/share/lark-cli/appsecret_<新AppID>.enc`
 
 ### 三、配置 Hermes 飞书连接
 
@@ -275,18 +274,19 @@ hermes pairing approve feishu <配对码>
 
 ### 五、用户身份授权
 
-lark-cli 以 user 身份创建 Base（Bot 身份通常缺少 `base:table:create` 权限）。
+lark-cli 以 user 身份创建 Base（Bot 身份缺少 `base:table:create` 等权限）。
+
+> ⚠️ **必须用 `--recommend` 一次性申请所有推荐 scope**（含 wiki、base、drive 等）。不带 `--recommend` 需要手动指定 scope，容易漏。
 
 ```bash
-lark-cli auth login --device-code
-```
+# 1. 生成授权链接
+lark-cli auth login --recommend --no-wait --json
 
-终端会输出一个 URL，在浏览器中打开并登录飞书账号完成授权。授权完成后终端显示登录成功。
+# 2. 生成二维码（--output 必须是相对路径）
+lark-cli auth qrcode "<verification_url>" --output ./qrcode.png
 
-如需完整 scope 覆盖：
-
-```bash
-lark-cli auth login --scope "contact:user:search base:table:create base:table:read base:field:create base:field:read base:field:update base:view:write_only base:record:create base:record:read base:record:update sheets:spreadsheet:read sheets:spreadsheet:write_only vc:note:read task:task:write task:task:read okr:okr.progress:writeonly okr:okr.period:readonly docx:document:readonly docx:document:write_only wiki:space:read wiki:node:read wiki:node:create offline_access"
+# 3. 发给用户，等用户确认完成后再轮询
+lark-cli auth login --device-code "<device_code>"
 ```
 
 ### 六、创建状态库 Base
