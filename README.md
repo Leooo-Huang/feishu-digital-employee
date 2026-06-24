@@ -246,7 +246,12 @@ FEISHU_APP_ID=cli_xxxxxxxxxxxx
 FEISHU_APP_SECRET=xxxxxxxxxxxx
 FEISHU_DOMAIN=feishu           # 国内版飞书用 feishu，海外版 Lark 用 lark
 FEISHU_CONNECTION_MODE=websocket
+GATEWAY_ALLOW_ALL_USERS=true   # 不写则 Gateway 拒绝所有消息
+FEISHU_GROUP_POLICY=open       # 不写默认 allowlist，群消息全部被拒绝
+FEISHU_HOME_CHANNEL=oc_xxxxxxxxxxxxxxxx  # 群 chat_id（可选）
 ```
+
+> ⚠️ **必填项说明**：`GATEWAY_ALLOW_ALL_USERS` 和 `FEISHU_GROUP_POLICY` 不写会导致消息收不到。`FEISHU_GROUP_POLICY` 可选 `open`（所有人）/ `allowlist`（需配 `FEISHU_ALLOWED_USERS`）/ `blacklist` / `disabled`。
 
 重启 Gateway 使配置生效：
 
@@ -510,9 +515,13 @@ hermes kanban init    # 自动发现所有 profile
 
 - **不要手动建 profile 目录**。用 `hermes profile create`，否则缺 profile.yaml、alias、systemd service。
 - **不要 clone .env**。`--clone` 会把 default 的所有环境变量带过来（包括微信凭证等无关变量），应该手动写干净的 .env。
+- **不要用终端 heredoc 写 App Secret**。会被 Hermes 脱敏截断，Gateway 报 `app_secret is invalid`。用 Python 直接写文件。
 - **model 配置要完整**。`config.yaml` 的 `model:` 块下必须有 `default`、`provider`、`base_url`、`api_key`，缺任何一个都会报 `No LLM provider configured`。
+- **`.env` 必须包含 `FEISHU_GROUP_POLICY=open`**。默认值是 `allowlist`，不配白名单的话群消息全部被拒绝（私聊正常）。症状：群里 @机器人没反应，私聊正常。
+- **`.env` 必须包含 `GATEWAY_ALLOW_ALL_USERS=true`**。不写则 Gateway 拒绝所有消息。
 - **不要反复重启 Gateway**。所有配置改完验证后再一次性重启。每次重启断开所有平台连接。
 - **每个飞书应用必须独立**。两个 profile 不能连同一个飞书应用的 WebSocket。
+- **多公司部署前先读已有 worker 的 .env**。逐字段对比，确保新 profile 覆盖所有必填字段。
 
 ## 测试
 
