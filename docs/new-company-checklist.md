@@ -52,7 +52,7 @@ hermes --profile <profile名> gateway setup
 3. **How to set up?** → 选 `Scan QR code to create a new bot automatically`
 4. **扫码创建应用** → 发送 QR 码/链接给用户，等待完成
 5. **DM authorization** → 选 `Allow all direct messages`
-6. **Group chats** → 选 `Respond only when @mentioned`
+6. **Group chats** → 选 `Respond only when @mentioned`（初始安全选项，后续在 Hermes 侧改为接收全部消息）
 7. **Home chat ID** → 直接回车跳过（可选）
 8. **Done** → 选 `Done`
 9. **Start gateway?** → 选 `n`（后续手动启动，避免反复重启）
@@ -66,6 +66,10 @@ hermes --profile <profile名> gateway setup
 > - `FEISHU_CONNECTION_MODE`
 > - `FEISHU_ALLOW_ALL_USERS=true`
 > - `FEISHU_GROUP_POLICY=open`
+
+> ⚠️ **如需接收群里不@机器人的消息**（两步缺一不可）：
+> 1. **飞书开放平台**：开通 `im:message.group_msg`（敏感权限，需审批），发布新版本
+> 2. **Hermes 配置**：在 `config.yaml` 的 `platforms.feishu` 下加 `require_mention: false`，或在 `.env` 加 `FEISHU_REQUIRE_MENTION=false`
 
 ### 1.3 配置 model
 
@@ -281,7 +285,8 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 | `app_id or app_secret is invalid` | .env 中 secret 被终端脱敏截断 | 用 Python 直接写文件 |
 | Gateway 拒绝所有消息 | .env 缺 `GATEWAY_ALLOW_ALL_USERS=true` | 追加到 .env |
 | 飞书不推送群消息（gateway.log 无 raw message） | 用了 `lark-cli config init` 而非 QR 扫码创建应用 | 用 `hermes gateway setup` QR 扫码重建 |
-| 群消息 raw 到了但没 inbound | 没有在群里 @机器人 | `FEISHU_REQUIRE_MENTION=true` 是默认值 |
+| 群消息 raw 到了但没 inbound | `require_mention=true`（默认），Hermes 过滤掉了不@的消息 | `config.yaml` 的 `platforms.feishu` 加 `require_mention: false` |
+| 429 时不 fallback | `fallback_model` 用了字符串格式，新版解析器只认字典列表 | 改成 `- provider: / model: / base_url: / api_key:` 列表格式 |
 | `cipher: message authentication failed` | lark-cli keychain 文件格式错误（写了 hex 而非 binary） | 用 Python AESGCM 加密后以 `wb` 模式写入 |
 | lark-cli `auth scopes` 返回空 | user 授权没做或用了不带 `--recommend` 的授权 | `auth login --recommend --no-wait` |
 | lark-cli profile appId 不对 | Hermes QR 扫码创建了新应用但 lark-cli 没更新 | 手动编辑 `~/.lark-cli/hermes/config.json` + 写 keychain |

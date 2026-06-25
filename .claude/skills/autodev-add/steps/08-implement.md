@@ -1,0 +1,39 @@
+# 步骤 8：实现新功能
+
+**目标**：按增量计划实现新功能代码。
+
+## 执行
+
+1. **加载上下文**：
+   - 读取 `*-index.md` + `*-rules.md`（全局约束）
+   - 读取步骤 6 的增量计划（当前任务）
+
+2. **按计划逐项实现**：
+   - 数据层：migration、model 定义
+   - API 层：端点实现
+   - UI 层：**四层递进实现**（如涉及前端）：
+     - **L1 结构**：布局骨架、组件树、路由注册 → 确认布局正确
+     - **L2 内容**：接入真实数据、表单交互、状态处理 → 确认功能可用
+     - **L3 视觉**：应用 ui.md 视觉规范的色彩/字体/间距/圆角 → 确认视觉一致
+     - **L4 动效**：应用 ui.md 动效规范的过渡/加载/反馈动画 → 确认交互流畅
+   - 调用 `frontend-design` skill 生成前端代码（如涉及 UI）
+
+3. **质量红线**：
+   - 参考 `autodev-shared/checklists/quality-redlines.md`
+   - 禁止占位、禁止 Mock、禁止降阶、版本正确
+
+4. **集成点特别注意**：
+   - 修改现有文件时，只改必要的部分
+   - 新增的 import/路由注册不要打乱现有代码结构
+
+## GAN 式对抗审查
+
+每个 task 完成后，调用 `autodev-review` skill。
+
+传入参数：
+- 维度 3 = "集成安全"（autodev-add 特有，检查与现有代码的兼容性）
+- acceptance_criteria 从 plan.md 当前 task 读取
+
+reviewer PASS 后，更新 plan.md：`status: pending` → `status: completed`
+
+--- 步骤 8 完成 ---

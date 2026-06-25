@@ -251,10 +251,24 @@ FEISHU_DOMAIN=feishu           # 国内版飞书用 feishu，海外版 Lark 用 
 FEISHU_CONNECTION_MODE=websocket
 GATEWAY_ALLOW_ALL_USERS=true   # 不写则 Gateway 拒绝所有消息
 FEISHU_GROUP_POLICY=open       # 不写默认 allowlist，群消息全部被拒绝
+FEISHU_REQUIRE_MENTION=false   # 群里不@也能看到消息（需配合飞书 group_msg 权限）
 FEISHU_HOME_CHANNEL=oc_xxxxxxxxxxxxxxxx  # 群 chat_id（可选）
 ```
 
 > ⚠️ **必填项说明**：`GATEWAY_ALLOW_ALL_USERS` 和 `FEISHU_GROUP_POLICY` 不写会导致消息收不到。`FEISHU_GROUP_POLICY` 可选 `open`（所有人）/ `allowlist`（需配 `FEISHU_ALLOWED_USERS`）/ `blacklist` / `disabled`。
+
+`config.yaml` 的 `platforms.feishu` 下需要配置是否要求 @mention（默认 `true`，即群里只有 @机器人 的消息才会响应）：
+
+```yaml
+platforms:
+  feishu:
+    enabled: true
+    connection_mode: websocket
+    group_policy: open
+    require_mention: false    # false = 收到所有群消息；true（默认）= 只响应 @机器人
+```
+
+> ⚠️ **两层限制**：即使 Hermes 配了 `require_mention: false`，飞书开放平台也必须开通 `im:message.group_msg`（敏感权限）才会推送不@的消息。否则飞书根本不推送，Hermes 看不到。详见 [权限配置](#八飞书开放平台权限)。
 
 重启 Gateway 使配置生效：
 
@@ -338,7 +352,8 @@ cp -r skills/atoms ~/.hermes/skills/
 | `vc:note` | 会议妙纪读取 |
 | `task:task` | 原生任务读写 |
 | `okr:okr` | OKR 读写 |
-| `im:message.group_msg`（敏感） | 群聊全量读取，需管理员审批；未获批时退化为机器人被 @ 提及时归档 |
+| `im:message.group_at_msg:readonly` | 群聊中被 @ 的消息（默认开通） |
+| `im:message.group_msg`（敏感，需审批） | 群聊全量读取，配合 `require_mention: false` 使用；未获批时机器人只能看到 @ 它的消息 |
 
 ### 九、订阅飞书事件（关键：否则开完会收不到妙记事件）
 
@@ -523,6 +538,15 @@ hermes kanban init    # 自动发现所有 profile
 - **model 配置要完整**。`config.yaml` 的 `model:` 块下必须有 `default`、`provider`、`base_url`、`api_key`，缺任何一个都会报 `No LLM provider configured`。
 - **`.env` 必须包含 `FEISHU_GROUP_POLICY=open`**。默认值是 `allowlist`，不配白名单的话群消息全部被拒绝（私聊正常）。症状：群里 @机器人没反应，私聊正常。
 - **`.env` 必须包含 `GATEWAY_ALLOW_ALL_USERS=true`**。不写则 Gateway 拒绝所有消息。
+- **群消息看不到不@的内容**。需要同时满足两个条件：(1) 飞书开放平台开通 `im:message.group_msg` 权限（敏感权限，需审批）；(2) `config.yaml` 的 `platforms.feishu` 下加 `require_mention: false`。只改一边没用——飞书不推 Hermes 就看不到，飞书推了 Hermes 过滤也会丢弃。
+- **`fallback_model` 必须用字典列表格式**。旧版字符串格式（`fallback_model: glm-5-turbo`）会被新版解析器跳过，导致 429 时不自动 fallback。正确写法：
+  ```yaml
+  fallback_model:
+    - provider: custom
+      model: glm-5-turbo
+      base_url: https://api.z.ai/api/coding/paas/v4
+      api_key: <key>
+  ```
 - **不要反复重启 Gateway**。所有配置改完验证后再一次性重启。每次重启断开所有平台连接。
 - **每个飞书应用必须独立**。两个 profile 不能连同一个飞书应用的 WebSocket。
 - **多公司部署前先读已有 worker 的 .env**。逐字段对比，确保新 profile 覆盖所有必填字段。
