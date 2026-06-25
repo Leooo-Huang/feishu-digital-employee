@@ -341,19 +341,85 @@ cp -r skills/atoms ~/.hermes/skills/
 
 ### 八、飞书开放平台权限
 
-登录 [飞书开放平台](https://open.feishu.cn/app) → 应用管理 → 权限管理，开通以下权限并**发布新版本**使其生效：
+登录 [飞书开放平台](https://open.feishu.cn/app) → 应用管理 → 权限管理，开通以下权限并**发布新版本**使其生效。
 
-| 权限 | 用途 |
-|---|---|
-| `im:message` / `im:message:send_as_bot` | 收发消息 |
-| `bitable:app` | 多维表格读写 |
-| `wiki:wiki` / `wiki:space` / `wiki:node` | 知识库读写 |
-| `docx:document` | 云文档读写 |
-| `vc:note` | 会议妙纪读取 |
-| `task:task` | 原生任务读写 |
-| `okr:okr` | OKR 读写 |
-| `im:message.group_at_msg:readonly` | 群聊中被 @ 的消息（默认开通） |
-| `im:message.group_msg`（敏感，需审批） | 群聊全量读取，配合 `require_mention: false` 使用；未获批时机器人只能看到 @ 它的消息 |
+> ⚠️ **必须全部开通再发版**，否则缺少的权限会导致对应功能 403/400。逐个搜索权限标识符开通。
+
+#### 消息（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `im:message` | 获取与发送单聊、群组消息 | 收发消息（核心） |
+| `im:message:send_as_bot` | 以应用的身份发消息 | bot 主动发消息（催办/群发/评论回复） |
+| `im:message.p2p_msg:readonly` | 接收单聊消息 | 私聊收消息 |
+| `im:message.group_at_msg:readonly` | 接收群聊中@本应用的消息 | 群里被@时收消息（默认） |
+| `im:message.group_msg` ⚠️ | 获取群组中所有消息 | **敏感权限**，需管理员审批；配合 `require_mention: false` 实现群全量消息读取 |
+| `im:resource` | 获取消息中的资源文件 | 接收图片/文件消息 |
+| `im:chat` | 获取群组信息 | 查群列表/群信息 |
+
+#### 知识库（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `wiki:wiki` | 查看、管理知识库 | 建知识空间/节点、读写 Wiki |
+| `wiki:wiki:readonly` | 查看知识库 | 体检时探测知识空间是否存在 |
+
+#### 云文档（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `docx:document` | 查看、评论、编辑、管理云文档 | 文档写入（知识沉淀） |
+| `docx:document:readonly` | 查看云文档 | 读文档正文（覆盖保护比对） |
+| `drive:drive` | 查看、编辑、管理云空间文件 | 文件导入/解析、本地文件转在线 |
+| `drive:drive:readonly` | 查看云空间文件 | 读文件信息 |
+| `drive:file` | 上传文件到云空间 | 上传附件 |
+
+#### 多维表格（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `bitable:app` | 查看、评论、编辑、管理多维表格 | 读写状态库（任务表/槽位表/路由表） |
+| `bitable:app:readonly` | 查看多维表格 | 读 Base 记录 |
+
+#### 电子表格（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `sheets:spreadsheet` | 查看、编辑、管理电子表格 | 解析用户上传的 Excel 文件 |
+| `sheets:spreadsheet:readonly` | 查看电子表格 | 读在线表格数据 |
+
+#### 任务（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `task:task` | 查看、编辑、管理任务 | 建原生 Task、设提醒、改属性 |
+| `task:task:readonly` | 查看任务 | 读任务列表/搜索任务 |
+
+#### OKR（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `okr:okr` | 查看、编辑、管理 OKR | 写 OKR 进展 |
+| `okr:okr:readonly` | 查看 OKR | 读周期/Objective/KeyResult |
+| `okr:okr.progress:writeonly` | 写入 OKR 进展 | 挂 KR 进展（周报素材） |
+| `okr:okr.period:readonly` | 读取 OKR 周期 | 列用户周期（取 cycle_id） |
+
+#### 会议与妙记（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `vc:note` | 查看、管理妙记 | 读取妙记纪要（AI 总结/决策/待办） |
+| `vc:note:readonly` | 查看妙记 | 搜会议记录、取纪要内容 |
+| `vc:video` | 查看、管理视频会议 | 录制读取（由会议定位纪要） |
+
+#### 通讯录（必开）
+
+| 权限标识 | 权限名称 | 用途 |
+|---|---|---|
+| `contact:user.base:readonly` | 获取用户基本信息 | 人名解析（@提及→open_id） |
+| `contact:user.employee:readonly` | 获取员工信息 | 查员工 ID（任务分派） |
+
+> 💡 **快捷操作**：权限管理页面支持搜索权限标识符（如 `bitable:app`），逐个搜索→开通→最后统一发版。
 
 ### 九、订阅飞书事件（关键：否则开完会收不到妙记事件）
 
