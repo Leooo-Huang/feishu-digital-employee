@@ -52,7 +52,7 @@ hermes --profile <profile名> gateway setup
 3. **How to set up?** → 选 `Scan QR code to create a new bot automatically`
 4. **扫码创建应用** → 发送 QR 码/链接给用户，等待完成
 5. **DM authorization** → 选 `Allow all direct messages`
-6. **Group chats** → 选 `Respond only when @mentioned`（初始安全选项，后续在 Hermes 侧改为接收全部消息）
+6. **Group chats** → 选 `Respond to all messages`（接收全部群消息，不要求@。飞书侧推送策略，选错了飞书不会推不@的消息，Hermes 端怎么配都没用）
 7. **Home chat ID** → 直接回车跳过（可选）
 8. **Done** → 选 `Done`
 9. **Start gateway?** → 选 `n`（后续手动启动，避免反复重启）
@@ -75,10 +75,10 @@ hermes --profile <profile名> gateway setup
 
 > 🔴 **必须做！QR 扫码只自动配了 im + wiki，base/sheets/drive/task/docx/vc/okr 全部没有！**
 
-用 `?q=` URL 参数一条链接预选全部 29 项权限，用户打开后直接确认：
+用 `?q=` URL 参数一条链接预选全部 30 项权限，用户打开后直接确认：
 
 ```
-https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
+https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_at_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
 ```
 
 把 `<APP_ID>` 替换为实际 App ID（QR 扫码后从 `.env` 读取）。

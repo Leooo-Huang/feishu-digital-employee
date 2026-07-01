@@ -372,9 +372,9 @@ cp -r skills/atoms ~/.hermes/skills/
 
 > ⚠️ **必须全部开通再发版**，否则缺少的权限会导致对应功能 403/400。
 >
-> ✅ **一键批量开通**：把以下链接中的 `<APP_ID>` 替换为你的 App ID，浏览器打开 → 29 项权限自动预选 → 确认开通：
+> ✅ **一键批量开通**：把以下链接中的 `<APP_ID>` 替换为你的 App ID，浏览器打开 → 30 项权限自动预选 → 确认开通：
 > ```
-> https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
+> https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_at_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
 > ```
 > 开通后去 [版本管理](https://open.feishu.cn/app/<APP_ID>/version) 发布新版本才生效。
 
@@ -385,7 +385,8 @@ cp -r skills/atoms ~/.hermes/skills/
 | `im:message` | 获取与发送单聊、群组消息 | 收发消息（核心） |
 | `im:message:send_as_bot` | 以应用的身份发消息 | bot 主动发消息（催办/群发/评论回复） |
 | `im:message.p2p_msg:readonly` | 接收单聊消息 | 私聊收消息 |
-| `im:message.group_msg` ⚠️ | 获取群组中所有消息 | **敏感权限**，需管理员审批；已包含@消息，配合 `require_mention: false` 实现群全量消息读取 |
+| `im:message.group_at_msg:readonly` | 接收群聊中@本应用的消息 | 保底：@消息（非敏感，自动审批） |
+| `im:message.group_msg` ⚠️ | 获取群组中所有消息 | **敏感权限**，需管理员审批；配合 `require_mention: false` 实现群全量消息读取 |
 | `im:resource` | 获取消息中的资源文件 | 接收图片/文件消息 |
 | `im:chat:readonly` | 获取群组信息 | 查群列表/群信息 |
 
@@ -452,7 +453,46 @@ cp -r skills/atoms ~/.hermes/skills/
 | `contact:user.base:readonly` | 获取用户基本信息 | 人名解析（@提及→open_id） |
 | `contact:user.employee:readonly` | 获取员工信息 | 查员工 ID（任务分派） |
 
-> 💡 上方 `?q=` 链接已包含以下全部 29 项权限。如需单独补充，也可在权限管理页面搜索权限标识符逐个开通。
+> 💡 上方 `?q=` 链接已包含以下全部 30 项权限。如需单独补充，也可在权限管理页面搜索权限标识符逐个开通。
+
+### 八b、群消息推送策略（两层配置缺一不可）
+
+> ⚠️ **"群里不@机器人也能收到消息"需要两层都配，只配一层无效。**
+
+#### 第一层：飞书侧（gateway setup 推送策略）
+
+`hermes gateway setup` QR 扫码流程中，**Group chats** 这一步必须选 **`Respond to all messages`**（接收全部群消息）。
+
+- ❌ 选 `Respond only when @mentioned` → 飞书根本不推送不@的消息，Hermes 看不到
+- ✅ 选 `Respond to all messages` → 飞书推送所有群消息到 Hermes
+
+**选错了只能重新 `gateway setup`**，没有事后修改的入口。
+
+#### 第二层：Hermes 侧（require_mention 配置）
+
+飞书把消息推过来了，Hermes 还会按自己的策略过滤。在 `config.yaml` 中：
+
+```yaml
+platforms:
+  feishu:
+    require_mention: false    # false = 不@也响应（推荐）
+    group_policy: open        # open = 接收所有群
+```
+
+或 `.env`：
+```
+FEISHU_REQUIRE_MENTION=false
+FEISHU_GROUP_POLICY=open
+```
+
+**两层关系总结：**
+
+| 飞书侧（setup） | Hermes 侧（config） | 效果 |
+|---|---|---|
+| `all messages` | `require_mention: false` | ✅ 全部群消息可见 |
+| `all messages` | `require_mention: true` | ⚠️ 飞书推了但 Hermes 过滤掉不@的 |
+| `@mentioned only` | `require_mention: false` | ⚠️ 飞书只推@的，Hermes 配了也没用 |
+| `@mentioned only` | `require_mention: true` | ✅ 只有@消息可见（最保守） |
 
 ### 九、订阅飞书事件（关键：否则开完会收不到妙记事件）
 
