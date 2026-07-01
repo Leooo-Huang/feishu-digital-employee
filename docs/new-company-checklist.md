@@ -71,7 +71,26 @@ hermes --profile <profile名> gateway setup
 > 1. **飞书开放平台**：开通 `im:message.group_msg`（敏感权限，需审批），发布新版本
 > 2. **Hermes 配置**：在 `config.yaml` 的 `platforms.feishu` 下加 `require_mention: false`，或在 `.env` 加 `FEISHU_REQUIRE_MENTION=false`
 
-### 1.3 配置 model
+### 1.3 开通应用 API 权限（`?q=` 批量预选 + 发布版本）
+
+> 🔴 **必须做！QR 扫码只自动配了 im + wiki，base/sheets/drive/task/docx/vc/okr 全部没有！**
+
+用 `?q=` URL 参数一条链接预选全部 29 项权限，用户打开后直接确认：
+
+```
+https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_at_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
+```
+
+把 `<APP_ID>` 替换为实际 App ID（QR 扫码后从 `.env` 读取）。
+
+开通后**必须发布新版本**才生效：
+```
+https://open.feishu.cn/app/<APP_ID>/version
+```
+
+> ⚠️ 之前的文档说"飞书没有批量开通 API"——那是 REST API 端点（确实不存在），但开放平台网页的 `?q=` 参数是可用的。
+
+### 1.4 配置 model
 
 ```bash
 hermes -p <profile名> config set model.default <model>
@@ -81,7 +100,7 @@ hermes -p <profile名> config set model.api_key <key>
 hermes -p <profile名> config set platforms.weixin.enabled false
 ```
 
-### 1.4 写入 SOUL.md
+### 1.5 写入 SOUL.md
 
 ```bash
 cat > ~/.hermes/profiles/<profile名>/SOUL.md << 'EOF'
@@ -296,4 +315,4 @@ env -u HERMES_HOME -u HERMES_CONFIG -u HERMES_PROFILE \
 
 ## 一句话总结
 
-> **创建 profile → QR 扫码（gateway setup）→ 同步 lark-cli（config + keychain）→ user 授权（--recommend）→ 同步 skills → 建 Base → 启动 gateway → 配对 → 事件订阅 → cron**
+> **创建 profile → QR 扫码（gateway setup）→ `?q=` 批量开通权限 + 发布版本 → 同步 lark-cli（config + keychain）→ user 授权（--recommend）→ 同步 skills → 建 Base → 启动 gateway → 配对 → 事件订阅 → cron**
