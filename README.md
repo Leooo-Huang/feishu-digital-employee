@@ -370,7 +370,13 @@ cp -r skills/atoms ~/.hermes/skills/
 
 登录 [飞书开放平台](https://open.feishu.cn/app) → 应用管理 → 权限管理，开通以下权限并**发布新版本**使其生效。
 
-> ⚠️ **必须全部开通再发版**，否则缺少的权限会导致对应功能 403/400。逐个搜索权限标识符开通。
+> ⚠️ **必须全部开通再发版**，否则缺少的权限会导致对应功能 403/400。
+>
+> ✅ **一键批量开通**：把以下链接中的 `<APP_ID>` 替换为你的 App ID，浏览器打开 → 29 项权限自动预选 → 确认开通：
+> ```
+> https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_at_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
+> ```
+> 开通后去 [版本管理](https://open.feishu.cn/app/<APP_ID>/version) 发布新版本才生效。
 
 #### 消息（必开）
 
@@ -382,7 +388,7 @@ cp -r skills/atoms ~/.hermes/skills/
 | `im:message.group_at_msg:readonly` | 接收群聊中@本应用的消息 | 群里被@时收消息（默认） |
 | `im:message.group_msg` ⚠️ | 获取群组中所有消息 | **敏感权限**，需管理员审批；配合 `require_mention: false` 实现群全量消息读取 |
 | `im:resource` | 获取消息中的资源文件 | 接收图片/文件消息 |
-| `im:chat` | 获取群组信息 | 查群列表/群信息 |
+| `im:chat:readonly` | 获取群组信息 | 查群列表/群信息 |
 
 #### 知识库（必开）
 
@@ -395,11 +401,11 @@ cp -r skills/atoms ~/.hermes/skills/
 
 | 权限标识 | 权限名称 | 用途 |
 |---|---|---|
-| `docx:document` | 查看、评论、编辑、管理云文档 | 文档写入（知识沉淀） |
+| `docx:document:create` | 创建云文档 | 文档写入（知识沉淀） |
 | `docx:document:readonly` | 查看云文档 | 读文档正文（覆盖保护比对） |
-| `drive:drive` | 查看、编辑、管理云空间文件 | 文件导入/解析、本地文件转在线 |
+| `docx:document:write_only` | 编辑云文档 | 文档内容写入 |
 | `drive:drive:readonly` | 查看云空间文件 | 读文件信息 |
-| `drive:file` | 上传文件到云空间 | 上传附件 |
+| `drive:file:upload` | 上传文件到云空间 | 上传附件 |
 
 #### 多维表格（必开）
 
@@ -437,7 +443,7 @@ cp -r skills/atoms ~/.hermes/skills/
 |---|---|---|
 | `vc:note` | 查看、管理妙记 | 读取妙记纪要（AI 总结/决策/待办） |
 | `vc:note:readonly` | 查看妙记 | 搜会议记录、取纪要内容 |
-| `vc:video` | 查看、管理视频会议 | 录制读取（由会议定位纪要） |
+| `vc:video:readonly` | 查看视频会议 | 录制读取（由会议定位纪要） |
 
 #### 通讯录（必开）
 
@@ -446,7 +452,7 @@ cp -r skills/atoms ~/.hermes/skills/
 | `contact:user.base:readonly` | 获取用户基本信息 | 人名解析（@提及→open_id） |
 | `contact:user.employee:readonly` | 获取员工信息 | 查员工 ID（任务分派） |
 
-> 💡 **快捷操作**：权限管理页面支持搜索权限标识符（如 `bitable:app`），逐个搜索→开通→最后统一发版。
+> 💡 上方 `?q=` 链接已包含以下全部 29 项权限。如需单独补充，也可在权限管理页面搜索权限标识符逐个开通。
 
 ### 九、订阅飞书事件（关键：否则开完会收不到妙记事件）
 
