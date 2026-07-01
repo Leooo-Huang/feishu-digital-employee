@@ -78,7 +78,7 @@ hermes --profile <profile名> gateway setup
 用 `?q=` URL 参数一条链接预选全部 29 项权限，用户打开后直接确认：
 
 ```
-https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_at_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
+https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
 ```
 
 把 `<APP_ID>` 替换为实际 App ID（QR 扫码后从 `.env` 读取）。

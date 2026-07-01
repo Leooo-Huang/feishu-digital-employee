@@ -374,7 +374,7 @@ cp -r skills/atoms ~/.hermes/skills/
 >
 > ✅ **一键批量开通**：把以下链接中的 `<APP_ID>` 替换为你的 App ID，浏览器打开 → 29 项权限自动预选 → 确认开通：
 > ```
-> https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_at_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
+> https://open.feishu.cn/app/<APP_ID>/auth?q=im:message,im:message:send_as_bot,im:message.p2p_msg:readonly,im:message.group_msg,im:resource,im:chat:readonly,wiki:wiki,wiki:wiki:readonly,docx:document:create,docx:document:readonly,docx:document:write_only,drive:drive,drive:drive:readonly,drive:file:upload,bitable:app,bitable:app:readonly,sheets:spreadsheet,sheets:spreadsheet:readonly,task:task,task:task:readonly,okr:okr,okr:okr:readonly,okr:okr.progress:writeonly,okr:okr.period:readonly,vc:note,vc:note:readonly,vc:video:readonly,contact:user.base:readonly,contact:user.employee:readonly
 > ```
 > 开通后去 [版本管理](https://open.feishu.cn/app/<APP_ID>/version) 发布新版本才生效。
 
@@ -385,8 +385,7 @@ cp -r skills/atoms ~/.hermes/skills/
 | `im:message` | 获取与发送单聊、群组消息 | 收发消息（核心） |
 | `im:message:send_as_bot` | 以应用的身份发消息 | bot 主动发消息（催办/群发/评论回复） |
 | `im:message.p2p_msg:readonly` | 接收单聊消息 | 私聊收消息 |
-| `im:message.group_at_msg:readonly` | 接收群聊中@本应用的消息 | 群里被@时收消息（默认） |
-| `im:message.group_msg` ⚠️ | 获取群组中所有消息 | **敏感权限**，需管理员审批；配合 `require_mention: false` 实现群全量消息读取 |
+| `im:message.group_msg` ⚠️ | 获取群组中所有消息 | **敏感权限**，需管理员审批；已包含@消息，配合 `require_mention: false` 实现群全量消息读取 |
 | `im:resource` | 获取消息中的资源文件 | 接收图片/文件消息 |
 | `im:chat:readonly` | 获取群组信息 | 查群列表/群信息 |
 
@@ -404,6 +403,7 @@ cp -r skills/atoms ~/.hermes/skills/
 | `docx:document:create` | 创建云文档 | 文档写入（知识沉淀） |
 | `docx:document:readonly` | 查看云文档 | 读文档正文（覆盖保护比对） |
 | `docx:document:write_only` | 编辑云文档 | 文档内容写入 |
+| `drive:drive` | 查看、编辑、管理云空间文件 | 文件导入/解析、本地文件转在线 |
 | `drive:drive:readonly` | 查看云空间文件 | 读文件信息 |
 | `drive:file:upload` | 上传文件到云空间 | 上传附件 |
 
